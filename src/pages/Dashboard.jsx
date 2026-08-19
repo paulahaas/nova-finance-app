@@ -79,11 +79,16 @@ export default function Dashboard() {
       {mainGoal && (
         <Link to="/app/goals" className="block">
           <Panel>
-            <div className="flex items-center justify-between mb-3">
-              <p className="font-medium">
-                {mainGoal.emoji} {mainGoal.name}
-              </p>
-              <p className="text-sm text-[var(--color-text-dim)]">
+            <div className="flex items-center justify-between mb-3 gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                {mainGoal.image ? (
+                  <img src={mainGoal.image} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0" />
+                ) : (
+                  <span className="text-xl shrink-0">{mainGoal.emoji}</span>
+                )}
+                <p className="font-medium truncate">{mainGoal.name}</p>
+              </div>
+              <p className="text-sm text-[var(--color-text-dim)] shrink-0">
                 {Math.round((mainGoal.saved / mainGoal.target) * 100)}%
               </p>
             </div>

@@ -34,11 +34,16 @@ export default function Goals() {
           const pct = Math.round((g.saved / g.target) * 100);
           return (
             <Panel key={g.id}>
-              <div className="flex items-center justify-between mb-4">
-                <p className="font-medium">
-                  {g.emoji} {g.name}
-                </p>
-                <p className="text-sm text-[var(--color-text-dim)]">{pct}%</p>
+              <div className="flex items-center justify-between mb-4 gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  {g.image ? (
+                    <img src={g.image} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0" />
+                  ) : (
+                    <span className="text-xl shrink-0">{g.emoji}</span>
+                  )}
+                  <p className="font-medium truncate">{g.name}</p>
+                </div>
+                <p className="text-sm text-[var(--color-text-dim)] shrink-0">{pct}%</p>
               </div>
               <ProgressBar value={g.saved} max={g.target} animateOnMount glowNearComplete />
               <div className="flex justify-between mt-3 text-sm text-[var(--color-text-dim)]">

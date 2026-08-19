@@ -46,7 +46,7 @@ export default function Transactions() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Transações</h1>
-        <Button onClick={() => setShowAdd((v) => !v)}>+ Adicionar transação</Button>
+        {!showAdd && <Button onClick={() => setShowAdd(true)}>+ Adicionar transação</Button>}
       </div>
 
       {showAdd && (
@@ -79,7 +79,7 @@ export default function Transactions() {
             <select
               value={form.category}
               onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-              className="rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)] px-4 py-3 text-sm outline-none"
+              className="rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)] px-4 py-3 text-sm outline-none disabled:opacity-40"
               disabled={form.type === 'income'}
             >
               {categories.map((c) => (
@@ -88,9 +88,14 @@ export default function Transactions() {
                 </option>
               ))}
             </select>
-            <Button type="submit" className="md:col-span-2">
-              Salvar
-            </Button>
+            <div className="flex gap-3 md:col-span-2">
+              <Button type="submit" className="flex-1">
+                Salvar
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setShowAdd(false)}>
+                Cancelar
+              </Button>
+            </div>
           </form>
         </Panel>
       )}
@@ -101,7 +106,7 @@ export default function Transactions() {
             key={f.id}
             onClick={() => setFilter(f.id)}
             className={clsx(
-              'rounded-full px-4 py-1.5 text-sm border transition-colors',
+              'rounded-full px-4 min-h-[40px] text-sm border transition-colors',
               filter === f.id
                 ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-text)]'
                 : 'border-[var(--color-border)] text-[var(--color-text-dim)]'
@@ -113,7 +118,7 @@ export default function Transactions() {
         <select
           value={bankFilter}
           onChange={(e) => setBankFilter(e.target.value)}
-          className="rounded-full px-4 py-1.5 text-sm border border-[var(--color-border)] bg-transparent text-[var(--color-text-dim)]"
+          className="rounded-full px-4 min-h-[40px] text-sm border border-[var(--color-border)] bg-transparent text-[var(--color-text-dim)]"
         >
           <option value="all">Todos os bancos</option>
           {banks.map((b) => (
@@ -125,7 +130,7 @@ export default function Transactions() {
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          className="rounded-full px-4 py-1.5 text-sm border border-[var(--color-border)] bg-transparent text-[var(--color-text-dim)]"
+          className="rounded-full px-4 min-h-[40px] text-sm border border-[var(--color-border)] bg-transparent text-[var(--color-text-dim)]"
         >
           <option value="all">Todas as categorias</option>
           {categories.map((c) => (

@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ImagePlus } from 'lucide-react';
 import Panel from '../../components/Panel';
 import Button from '../../components/Button';
 import { useData } from '../../contexts/DataContext';
 import { formatCurrency, formatDateLong } from '../../utils/format';
+import { compressImageFile } from '../../utils/image';
 
 const SCENARIOS = [500, 750, 1000, 1500];
 
@@ -14,6 +16,9 @@ export default function GoalNew() {
   const [target, setTarget] = useState('');
   const [initial, setInitial] = useState('');
   const [deadline, setDeadline] = useState('');
+  const [image, setImage] = useState(null);
+  const [imageError, setImageError] = useState('');
+  const fileInputRef = useRef(null);
 
   const remaining = Math.max(0, Number(target || 0) - Number(initial || 0));
 
@@ -25,6 +30,18 @@ export default function GoalNew() {
     return date;
   }
 
+  async function handleImageChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageError('');
+    try {
+      const dataUrl = await compressImageFile(file);
+      setImage(dataUrl);
+    } catch (err) {
+      setImageError(err.message);
+    }
+  }
+
   function handleSubmit(e) {
     e.preventDefault();
     const finalDeadline = deadline || new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString();
@@ -34,6 +51,7 @@ export default function GoalNew() {
     addGoal({
       name,
       emoji: '🎯',
+      image,
       target: finalTarget,
       saved: finalSaved,
       deadline: finalDeadline,
@@ -50,6 +68,32 @@ export default function GoalNew() {
 
       <Panel>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-24 h-24 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)] overflow-hidden flex items-center justify-center"
+              aria-label="Adicionar foto da meta"
+            >
+              {image ? (
+                <img src={image} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <ImagePlus size={26} className="text-[var(--color-text-faint)]" />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageChange}
+            />
+            <span className="text-sm text-[var(--color-text-dim)]">
+              {image ? 'Trocar foto' : 'Adicionar foto (opcional)'}
+            </span>
+            {imageError && <span className="text-sm text-[var(--color-negative)]">{imageError}</span>}
+          </div>
+
           <input
             required
             placeholder="Nome da meta"
