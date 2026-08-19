@@ -1,21 +1,16 @@
-// Demo data provider — localStorage-backed, seeded with the demo dataset
-// so the app is fully explorable with zero setup. Used when Firebase isn't
+// Local/demo data provider — localStorage-backed. Used when Firebase isn't
 // configured (see services/firebase.js). Mirrors the interface exposed by
 // firestoreDataProvider.js.
+//
+// Which starting dataset a user sees (empty vs. the full demo dataset) is
+// decided at auth time by contexts/authProviders/localAuthProvider.js
+// (seedEmptyAccount on signup, seedDemoAccount on a fresh demo login) —
+// see services/seedService.js. ensureSeeded() below is only a safety net
+// for the rare case this provider mounts before either has run.
 
 import { useMemo, useState } from 'react';
-import { readCollection, writeCollection, isSeeded, markSeeded } from '../../services/storageService';
-import {
-  buildDemoBanks,
-  buildDemoAccounts,
-  buildDemoCards,
-  buildDemoCategories,
-  buildDemoTransactions,
-  buildDemoGoals,
-  buildDemoSubscriptions,
-  buildDemoAlerts,
-  buildDemoAchievements,
-} from '../../data/demoData';
+import { readCollection, writeCollection } from '../../services/storageService';
+import { ensureSeeded } from '../../services/seedService';
 import {
   availableMoney,
   dailyBudget,
@@ -24,22 +19,8 @@ import {
   monthIncome,
 } from '../../services/financeService';
 
-function seedIfNeeded() {
-  if (isSeeded()) return;
-  writeCollection('banks', buildDemoBanks());
-  writeCollection('accounts', buildDemoAccounts());
-  writeCollection('cards', buildDemoCards());
-  writeCollection('categories', buildDemoCategories());
-  writeCollection('transactions', buildDemoTransactions());
-  writeCollection('goals', buildDemoGoals());
-  writeCollection('subscriptions', buildDemoSubscriptions());
-  writeCollection('alerts', buildDemoAlerts());
-  writeCollection('achievements', buildDemoAchievements());
-  markSeeded();
-}
-
 export function useLocalDataProvider(user) {
-  seedIfNeeded();
+  ensureSeeded();
 
   const [banks, setBanks] = useState(() => readCollection('banks'));
   const [accounts, setAccounts] = useState(() => readCollection('accounts'));

@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react';
 import { readDoc, writeDoc } from '../../services/storageService';
 import { buildDemoUser } from '../../data/demoData';
+import { seedDemoAccount, seedEmptyAccount } from '../../services/seedService';
 
 function nameFromEmail(email) {
   const local = email?.split('@')[0];
@@ -20,6 +21,26 @@ function nameFromEmail(email) {
     .join(' ');
 }
 
+// A real fresh account, not the pre-populated demo persona — onboarding
+// (Onboarding.jsx) is what fills in income/payDay/hasCard/hasDebt/goalIntent.
+function emptyProfile({ name, email }) {
+  return {
+    id: 'demo-user',
+    name,
+    email,
+    plan: 'free',
+    income: 0,
+    payDay: 5,
+    hasCard: false,
+    hasDebt: false,
+    goalIntent: null,
+    aiMessagesUsed: 0,
+    xp: 0,
+    level: 1,
+    createdAt: new Date().toISOString(),
+  };
+}
+
 export function useLocalAuthProvider() {
   const [user, setUser] = useState(() => readDoc('user', null));
 
@@ -28,8 +49,10 @@ export function useLocalAuthProvider() {
   }, [user]);
 
   async function signup({ name, email }) {
-    const base = buildDemoUser();
-    const newUser = { ...base, name, email, onboarded: false };
+    // A genuinely blank slate — same as what a brand-new Firebase account
+    // gets. No demo banks/cards/transactions until the user adds their own.
+    seedEmptyAccount();
+    const newUser = { ...emptyProfile({ name, email }), onboarded: false };
     setUser(newUser);
     return newUser;
   }
@@ -40,6 +63,10 @@ export function useLocalAuthProvider() {
       setUser(existing);
       return existing;
     }
+    // No local account yet: "Entrar" without signing up first is the
+    // quick-look shortcut — drop into the pre-filled demo dataset instead
+    // of an empty one.
+    seedDemoAccount();
     const base = buildDemoUser();
     // Logging in (as opposed to signing up) never collects a name — derive
     // a reasonable one from the email instead of keeping the seeded demo
