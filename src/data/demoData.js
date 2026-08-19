@@ -43,6 +43,7 @@ export function buildDemoCards() {
       id: 'card-1',
       bankId: 'bank-1',
       name: 'Nubank',
+      type: 'both',
       limit: 4000,
       used: 1850,
       currentInvoice: 1240,

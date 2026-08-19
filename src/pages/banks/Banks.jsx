@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Panel from '../../components/Panel';
 import Button from '../../components/Button';
+import TiltCard from '../../components/TiltCard';
 import UpgradeSheet from '../../components/UpgradeSheet';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
@@ -56,18 +57,20 @@ export default function Banks() {
 
       <div className="space-y-3">
         {banks.map((bank) => (
-          <Panel key={bank.id} className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🏦</span>
-              <div>
-                <p className="font-medium">{bank.name}</p>
-                <p className="text-sm text-[var(--color-text-dim)]">
-                  {accountsFor(bank.id)[0]?.name ?? 'Conta principal'}
-                </p>
+          <TiltCard key={bank.id}>
+            <Panel className="flex items-center justify-between active:scale-[0.98] transition-transform">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🏦</span>
+                <div>
+                  <p className="font-medium">{bank.name}</p>
+                  <p className="text-sm text-[var(--color-text-dim)]">
+                    {accountsFor(bank.id)[0]?.name ?? 'Conta principal'}
+                  </p>
+                </div>
               </div>
-            </div>
-            <p className="font-medium tabular">{formatCurrency(bankBalance(bank.id))}</p>
-          </Panel>
+              <p className="font-medium tabular">{formatCurrency(bankBalance(bank.id))}</p>
+            </Panel>
+          </TiltCard>
         ))}
       </div>
 

@@ -77,6 +77,10 @@ export function useLocalDataProvider(user) {
     setAndPersistSubscriptions((prev) => [...prev, { id: `sub-${Date.now()}`, ...sub }]);
   }
 
+  function removeSubscription(id) {
+    setAndPersistSubscriptions((prev) => prev.filter((s) => s.id !== id));
+  }
+
   const computed = useMemo(() => {
     const available = availableMoney({ accounts, cards, subscriptions, goals });
     const income = user?.income ?? monthIncome(transactions);
@@ -109,6 +113,7 @@ export function useLocalDataProvider(user) {
     addGoal,
     contributeToGoal,
     addSubscription,
+    removeSubscription,
     setCategories,
   };
 }

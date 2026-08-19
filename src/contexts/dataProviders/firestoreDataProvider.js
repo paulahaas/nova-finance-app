@@ -7,7 +7,7 @@
 // this is the real, production data path.
 
 import { useEffect, useMemo, useState } from 'react';
-import { collection, addDoc, updateDoc, doc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { buildDemoCategories } from '../../data/demoData';
 import {
@@ -42,7 +42,12 @@ function useUserCollection(uid, name) {
     return updateDoc(doc(db, 'users', uid, name, id), patch);
   }
 
-  return [items, add, update];
+  function remove(id) {
+    if (!uid || !db) return Promise.resolve();
+    return deleteDoc(doc(db, 'users', uid, name, id));
+  }
+
+  return [items, add, update, remove];
 }
 
 export function useFirestoreDataProvider(uid, user) {
@@ -51,7 +56,7 @@ export function useFirestoreDataProvider(uid, user) {
   const [cards, addCardDoc] = useUserCollection(uid, 'cards');
   const [transactions, addTransactionDoc] = useUserCollection(uid, 'transactions');
   const [goals, addGoalDoc, updateGoalDoc] = useUserCollection(uid, 'goals');
-  const [subscriptions, addSubscriptionDoc] = useUserCollection(uid, 'subscriptions');
+  const [subscriptions, addSubscriptionDoc, , removeSubscriptionDoc] = useUserCollection(uid, 'subscriptions');
 
   const categories = useMemo(() => buildDemoCategories(), []);
   const alerts = []; // real alert generation is a future backend job — see README roadmap
@@ -79,6 +84,9 @@ export function useFirestoreDataProvider(uid, user) {
   }
   function addSubscription(sub) {
     return addSubscriptionDoc(sub);
+  }
+  function removeSubscription(id) {
+    return removeSubscriptionDoc(id);
   }
 
   const computed = useMemo(() => {
@@ -112,6 +120,7 @@ export function useFirestoreDataProvider(uid, user) {
     addGoal,
     contributeToGoal,
     addSubscription,
+    removeSubscription,
     setCategories: () => {}, // categories aren't user-editable yet (section 19: "futuramente")
   };
 }

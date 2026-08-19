@@ -40,7 +40,7 @@ export default function Goals() {
                 </p>
                 <p className="text-sm text-[var(--color-text-dim)]">{pct}%</p>
               </div>
-              <ProgressBar value={g.saved} max={g.target} />
+              <ProgressBar value={g.saved} max={g.target} animateOnMount glowNearComplete />
               <div className="flex justify-between mt-3 text-sm text-[var(--color-text-dim)]">
                 <span>
                   {formatCurrency(g.saved)} de {formatCurrency(g.target)}

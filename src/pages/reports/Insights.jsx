@@ -26,7 +26,7 @@ export default function Insights() {
 
       <div className="space-y-3">
         {BASIC_INSIGHTS.map((i, idx) => (
-          <Panel key={idx}>
+          <Panel key={idx} className={idx === 0 ? 'shimmer-border' : ''}>
             <p className="text-sm">
               {i.icon} {i.text}
             </p>

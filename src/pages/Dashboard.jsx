@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ShoppingBag, ChevronRight } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
@@ -86,7 +87,7 @@ export default function Dashboard() {
                 {Math.round((mainGoal.saved / mainGoal.target) * 100)}%
               </p>
             </div>
-            <ProgressBar value={mainGoal.saved} max={mainGoal.target} />
+            <ProgressBar value={mainGoal.saved} max={mainGoal.target} animateOnMount glowNearComplete />
             <p className="text-sm text-[var(--color-text-dim)] mt-3">
               {formatCurrency(mainGoal.saved)} de {formatCurrency(mainGoal.target)}
             </p>
@@ -120,30 +121,33 @@ export default function Dashboard() {
       </Panel>
 
       <Link to="/app/copilot">
-        <Panel className="hover:border-[var(--color-accent)] transition-colors">
+        <Panel className="shimmer-border hover:border-[var(--color-accent)] transition-colors">
           <p className="font-medium mb-1">Copilot</p>
           <p className="text-sm text-[var(--color-text-dim)]">{primaryRecommendation(transactions)}</p>
         </Panel>
       </Link>
 
-      <div className="grid md:grid-cols-2 gap-4">
-        <Link to="/app/can-i-buy">
-          <Panel className="hover:border-[var(--color-accent)] transition-colors">
+      <Link to="/app/can-i-buy">
+        <Panel className="flex items-center gap-4 hover:border-[var(--color-accent)] transition-colors">
+          <span className="flex items-center justify-center w-11 h-11 rounded-full bg-[var(--color-accent-soft)] shrink-0">
+            <ShoppingBag size={20} className="text-[var(--color-accent)]" />
+          </span>
+          <div className="flex-1">
             <p className="font-medium">Posso comprar?</p>
-            <p className="text-sm text-[var(--color-text-dim)] mt-1">
-              Descubra se uma compra cabe no seu orçamento.
-            </p>
-          </Panel>
-        </Link>
-        {alerts[0] && (
-          <Panel>
-            <p className="font-medium mb-2">Alertas</p>
-            <p className="text-sm text-[var(--color-text-dim)]">
-              {alerts[0].icon} {alerts[0].message}
-            </p>
-          </Panel>
-        )}
-      </div>
+            <p className="text-sm text-[var(--color-text-dim)]">Descubra se uma compra cabe no seu orçamento.</p>
+          </div>
+          <ChevronRight size={18} className="text-[var(--color-text-faint)] shrink-0" />
+        </Panel>
+      </Link>
+
+      {alerts[0] && (
+        <Panel>
+          <p className="font-medium mb-2">Alertas</p>
+          <p className="text-sm text-[var(--color-text-dim)]">
+            {alerts[0].icon} {alerts[0].message}
+          </p>
+        </Panel>
+      )}
     </div>
   );
 }

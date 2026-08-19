@@ -15,12 +15,13 @@
   --color-text-dim: #a3a3a3;
   --color-text-faint: #6b6b6b;
 
-  --color-accent: #e11d2f;
-  --color-accent-dim: #7f1420;
-  --color-accent-soft: rgba(225, 29, 47, 0.12);
+  --color-accent: #4c48ad;
+  --color-accent-bright: #6b64d6;
+  --color-accent-dim: #2c2a63;
+  --color-accent-soft: rgba(76, 72, 173, 0.14);
 
   --color-positive: #34d399;
-  --color-negative: #e11d2f;
+  --color-negative: #d0475a;
   --color-warning: #f5b942;
 }
 
@@ -111,4 +112,41 @@ a {
 }
 .animate-pulse-soft {
   animation: pulse-soft 1.8s ease-in-out infinite;
+}
+
+/* AI-touched cards (Copilot, insights): a slow, low-opacity gradient ring
+   instead of a static border — reads as "alive" without being flashy. */
+@property --shimmer-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes shimmer-spin {
+  to {
+    --shimmer-angle: 360deg;
+  }
+}
+
+.shimmer-border {
+  position: relative;
+}
+.shimmer-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--shimmer-angle),
+    var(--color-accent-dim),
+    var(--color-accent-bright),
+    var(--color-accent-dim) 40%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.55;
+  animation: shimmer-spin 7s linear infinite;
+  pointer-events: none;
 }

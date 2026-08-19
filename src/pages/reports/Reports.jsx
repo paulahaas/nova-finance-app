@@ -8,7 +8,7 @@ import { useData } from '../../contexts/DataContext';
 import { canUseAdvancedReports } from '../../config/permissions';
 import { formatCurrency, formatCompact } from '../../utils/format';
 
-const COLORS = ['#e11d2f', '#f5b942', '#34d399', '#a3a3a3', '#7f1420', '#6b6b6b'];
+const COLORS = ['#6b64d6', '#f5b942', '#34d399', '#a3a3a3', '#2c2a63', '#6b6b6b'];
 
 export default function Reports() {
   const { user } = useAuth();
