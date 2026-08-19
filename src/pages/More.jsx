@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Lightbulb, CreditCard, Repeat, User, Settings as SettingsIcon, Crown, BarChart3, ChevronRight } from 'lucide-react';
+import { Lightbulb, CreditCard, Repeat, User, Settings as SettingsIcon, Crown, BarChart3, ChevronRight, MessageCircle } from 'lucide-react';
 import Panel from '../components/Panel';
 import { useAuth } from '../contexts/AuthContext';
 import { getPlan } from '../config/plans';
@@ -11,6 +11,7 @@ const ITEMS = [
   { to: '/app/subscriptions', label: 'Assinaturas', icon: Repeat },
   { to: '/app/profile', label: 'Perfil', icon: User },
   { to: '/app/settings', label: 'Configurações', icon: SettingsIcon },
+  { to: '/app/help', label: 'Ajuda', icon: MessageCircle },
 ];
 
 export default function More() {

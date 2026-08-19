@@ -78,6 +78,13 @@ export default function Settings() {
       </Panel>
 
       <Panel>
+        <button onClick={() => navigate('/app/help')} className="w-full flex items-center justify-between text-sm">
+          Ajuda
+          <span className="text-[var(--color-text-faint)]">›</span>
+        </button>
+      </Panel>
+
+      <Panel>
         <button
           onClick={handleDeleteAccount}
           className="w-full text-sm text-[var(--color-negative)] text-left"
