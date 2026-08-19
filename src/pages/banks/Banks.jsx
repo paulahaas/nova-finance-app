@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { PluggyConnect } from 'react-pluggy-connect';
+import { Landmark } from 'lucide-react';
 import Panel from '../../components/Panel';
 import Button from '../../components/Button';
 import TiltCard from '../../components/TiltCard';
@@ -8,17 +10,27 @@ import { useData } from '../../contexts/DataContext';
 import { canAddBank } from '../../config/permissions';
 import { getPlan } from '../../config/plans';
 import { formatCurrency } from '../../utils/format';
+import { getGatewayStatus, getConnectToken, syncItem } from '../../services/openFinanceService';
 
 export default function Banks() {
-  const { user } = useAuth();
+  const { user, getIdToken } = useAuth();
   const { banks, accounts, addBank } = useData();
   const [showAdd, setShowAdd] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [name, setName] = useState('');
 
+  const [openFinanceAvailable, setOpenFinanceAvailable] = useState(false);
+  const [connectToken, setConnectToken] = useState(null);
+  const [ofBusy, setOfBusy] = useState(false);
+  const [ofError, setOfError] = useState('');
+
   const plan = getPlan(user?.plan);
   const isFree = plan.id === 'free';
   const permission = canAddBank(user, banks.length);
+
+  useEffect(() => {
+    getGatewayStatus().then((s) => setOpenFinanceAvailable(s.gatewayConfigured));
+  }, []);
 
   function accountsFor(bankId) {
     return accounts.filter((a) => a.bankId === bankId);
@@ -44,6 +56,37 @@ export default function Banks() {
     setShowAdd(false);
   }
 
+  async function handleConnectClick() {
+    if (!permission.allowed) {
+      setShowUpgrade(true);
+      return;
+    }
+    setOfError('');
+    setOfBusy(true);
+    try {
+      const token = await getConnectToken(getIdToken);
+      setConnectToken(token);
+    } catch (err) {
+      setOfError(err.message);
+    } finally {
+      setOfBusy(false);
+    }
+  }
+
+  async function handleConnectSuccess({ item }) {
+    setConnectToken(null);
+    setOfBusy(true);
+    try {
+      await syncItem(getIdToken, item.id);
+      // New banks/accounts/transactions arrive via the Firestore
+      // onSnapshot listeners in DataContext — nothing to update manually.
+    } catch (err) {
+      setOfError(err.message);
+    } finally {
+      setOfBusy(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -64,7 +107,9 @@ export default function Banks() {
                 <div>
                   <p className="font-medium">{bank.name}</p>
                   <p className="text-sm text-[var(--color-text-dim)]">
-                    {accountsFor(bank.id)[0]?.name ?? 'Conta principal'}
+                    {bank.source === 'open-finance'
+                      ? 'Conectado via Open Finance'
+                      : (accountsFor(bank.id)[0]?.name ?? 'Conta principal')}
                   </p>
                 </div>
               </div>
@@ -73,6 +118,15 @@ export default function Banks() {
           </TiltCard>
         ))}
       </div>
+
+      {ofError && <p className="text-sm text-[var(--color-negative)]">{ofError}</p>}
+
+      {openFinanceAvailable && (
+        <Button variant="outline" className="w-full flex items-center justify-center gap-2" onClick={handleConnectClick} disabled={ofBusy}>
+          <Landmark size={18} />
+          {ofBusy ? 'Conectando...' : 'Conectar banco automaticamente (Open Finance)'}
+        </Button>
+      )}
 
       {showAdd ? (
         <Panel>
@@ -94,7 +148,7 @@ export default function Banks() {
         </Panel>
       ) : (
         <Button variant="outline" className="w-full" onClick={handleAddClick}>
-          + Adicionar banco
+          + Adicionar banco manualmente
         </Button>
       )}
 
@@ -103,6 +157,16 @@ export default function Banks() {
           title="Seu limite gratuito foi atingido"
           description={`Você já conectou ${banks.length} bancos. Faça upgrade para o NOVA Pro e conecte quantos bancos quiser.`}
           onClose={() => setShowUpgrade(false)}
+        />
+      )}
+
+      {connectToken && (
+        <PluggyConnect
+          connectToken={connectToken}
+          includeSandbox={false}
+          onSuccess={handleConnectSuccess}
+          onError={(err) => setOfError(err.message)}
+          onClose={() => setConnectToken(null)}
         />
       )}
     </div>

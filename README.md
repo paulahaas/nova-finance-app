@@ -127,9 +127,25 @@ Diferente do modo demo, uma conta real criada via Firebase **começa vazia** —
 - O backend ([`server/routes/copilot.js`](server/routes/copilot.js) + [`server/services/aiService.js`](server/services/aiService.js)) usa a Claude API com a chave lida de `ANTHROPIC_API_KEY`.
 - Se a chave não estiver configurada, o backend recusa a chamada e o cliente usa uma resposta local baseada em regras — sempre deixando claro que está em modo de demonstração.
 
-## Open Finance
+## Open Finance (conexão real de bancos, via Pluggy)
 
-Ainda não implementado. O cadastro de bancos/contas é manual. A camada de dados (Firestore ou `localStorage`, dependendo do modo) foi desenhada para que, quando uma integração real com Open Finance existir, ela apenas escreva nas mesmas coleções (`banks`, `accounts`, `transactions`) — sem exigir mudanças na interface.
+NOVA não se conecta ao Banco Central diretamente — isso só vale para instituições financeiras reguladas. A conexão real usa a [Pluggy](https://pluggy.ai), uma agregadora certificada do Open Finance brasileiro: o backend usa o SDK oficial `pluggy-sdk`, o frontend usa o widget oficial `react-pluggy-connect`. Sem `PLUGGY_CLIENT_ID`/`PLUGGY_CLIENT_SECRET` configuradas, o botão "Conectar banco automaticamente" simplesmente não aparece em Bancos — o cadastro manual continua funcionando normalmente (é o que o modo demo sempre usou).
+
+**Como funciona:**
+
+1. O usuário clica em "Conectar banco automaticamente" → o frontend pede um *connect token* ao backend (`POST /api/open-finance/connect-token`, autenticado)
+2. O widget da Pluggy abre, o usuário escolhe o banco e autoriza o acesso — a NOVA nunca vê a senha do banco, isso acontece inteiramente dentro do widget da Pluggy
+3. No sucesso, o frontend chama `POST /api/open-finance/sync` com o `itemId` retornado; o backend busca contas e transações via `pluggy-sdk` e grava nas mesmas coleções do Firestore que o resto do app já lê (`users/{uid}/banks|accounts|transactions`), marcadas com `source: "open-finance"` para não se confundirem com lançamentos manuais
+4. Atualizações posteriores (nova transação, etc.) chegam via webhook (`POST /api/open-finance/webhook`) e resincronizam automaticamente
+
+**Como configurar:**
+
+1. Crie uma conta em [dashboard.pluggy.ai](https://dashboard.pluggy.ai) (tem sandbox gratuito para testar antes de ir a produção)
+2. Copie `CLIENT_ID` e `CLIENT_SECRET` para `PLUGGY_CLIENT_ID`/`PLUGGY_CLIENT_SECRET` no `.env`
+3. Defina qualquer valor em `PLUGGY_WEBHOOK_SECRET` e registre o webhook no dashboard da Pluggy apontando para `https://SEU_DOMINIO/api/open-finance/webhook`, com um header customizado `X-Webhook-Secret` igual a esse valor (a Pluggy não assina webhooks, só suporta headers customizados — é assim que validamos que a chamada é legítima)
+4. Requer Firebase configurado (a sincronização grava no Firestore do usuário autenticado)
+
+O fluxo completo vive em [`server/routes/openFinance.js`](server/routes/openFinance.js) + [`server/services/openFinanceService.js`](server/services/openFinanceService.js).
 
 ## Pagamento (assinatura NOVA Pro via Stripe)
 
@@ -184,8 +200,8 @@ NOVA/
 │   ├── App.jsx
 │   └── main.jsx
 ├── server/
-│   ├── routes/                # copilot.js, stripe.js, plans.js
-│   ├── services/              # aiService.js, paymentService.js (Stripe), firebaseAdmin.js
+│   ├── routes/                # copilot.js, stripe.js, openFinance.js, plans.js
+│   ├── services/              # aiService.js, paymentService.js (Stripe), openFinanceService.js (Pluggy), firebaseAdmin.js
 │   ├── middleware/            # auth.js — verifica o ID token do Firebase
 │   └── index.js
 ├── scripts/
@@ -208,7 +224,6 @@ NOVA/
 
 ## Roadmap previsto
 
-- Integração real com Open Finance
 - Plano anual na UI (o Price já está previsto em `src/config/plans.js`)
 - Apps mobile nativos
 - Novos recursos de IA no Copilot
