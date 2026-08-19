@@ -9,8 +9,9 @@ const MESSAGES = {
   'auth/popup-closed-by-user': 'Login cancelado.',
   'auth/network-request-failed': 'Falha de conexão. Verifique sua internet.',
   'auth/too-many-requests': 'Muitas tentativas. Tente novamente em instantes.',
+  'demo/account-not-found': 'Nenhuma conta encontrada com esse e-mail. Crie uma conta ou experimente o modo demonstração.',
 };
 
 export function friendlyAuthError(err) {
-  return MESSAGES[err?.code] ?? 'Não foi possível concluir a ação. Tente novamente.';
+  return MESSAGES[err?.code] ?? err?.message ?? 'Não foi possível concluir a ação. Tente novamente.';
 }

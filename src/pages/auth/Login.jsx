@@ -9,7 +9,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, startDemo, authMode } = useAuth();
   const navigate = useNavigate();
 
   async function handleSubmit(e) {
@@ -33,6 +33,19 @@ export default function Login() {
     setSubmitting(true);
     try {
       await loginWithGoogle();
+      navigate('/app');
+    } catch (err) {
+      setError(friendlyAuthError(err));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDemo() {
+    setError('');
+    setSubmitting(true);
+    try {
+      await startDemo();
       navigate('/app');
     } catch (err) {
       setError(friendlyAuthError(err));
@@ -78,6 +91,17 @@ export default function Login() {
           Criar conta
         </Link>
       </p>
+
+      {authMode === 'demo' && (
+        <button
+          type="button"
+          onClick={handleDemo}
+          disabled={submitting}
+          className="mt-6 text-sm text-center text-[var(--color-text-faint)] hover:text-[var(--color-text-dim)] underline underline-offset-4"
+        >
+          Só quer dar uma olhada? Ver modo demonstração
+        </button>
+      )}
     </div>
   );
 }

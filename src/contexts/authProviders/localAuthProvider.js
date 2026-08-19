@@ -3,23 +3,17 @@
 // the app is fully explorable with zero setup. Mirrors the interface
 // exposed by firebaseAuthProvider.js so AuthContext can swap between them
 // without the rest of the app knowing which one is active.
+//
+// "Entrar" only succeeds for an account that already exists locally — it
+// used to silently spin up the demo persona for any email typed in, which
+// looked like a bug (a card/balance nobody added showing up right after
+// "login"). The demo dataset is now only reachable through the explicit
+// startDemo() action (see pages/auth/Login.jsx "Ver modo demonstração").
 
 import { useEffect, useState } from 'react';
 import { readDoc, writeDoc } from '../../services/storageService';
 import { buildDemoUser } from '../../data/demoData';
 import { seedDemoAccount, seedEmptyAccount } from '../../services/seedService';
-
-function nameFromEmail(email) {
-  const local = email?.split('@')[0];
-  if (!local) return null;
-  return local
-    .replace(/[._-]+/g, ' ')
-    .trim()
-    .split(' ')
-    .filter(Boolean)
-    .map((w) => w[0].toUpperCase() + w.slice(1))
-    .join(' ');
-}
 
 // A real fresh account, not the pre-populated demo persona — onboarding
 // (Onboarding.jsx) is what fills in income/payDay/hasCard/hasDebt/goalIntent.
@@ -57,28 +51,39 @@ export function useLocalAuthProvider() {
     return newUser;
   }
 
-  async function login({ email }) {
+  async function login() {
     const existing = readDoc('user', null);
     if (existing) {
       setUser(existing);
       return existing;
     }
-    // No local account yet: "Entrar" without signing up first is the
-    // quick-look shortcut — drop into the pre-filled demo dataset instead
-    // of an empty one.
-    seedDemoAccount();
-    const base = buildDemoUser();
-    // Logging in (as opposed to signing up) never collects a name — derive
-    // a reasonable one from the email instead of keeping the seeded demo
-    // persona's name, which would otherwise stick around regardless of who
-    // actually logged in.
-    const newUser = { ...base, name: nameFromEmail(email) ?? base.name, email, onboarded: true };
+    const err = new Error('Nenhuma conta encontrada com esse e-mail. Crie uma conta ou experimente o modo demonstração.');
+    err.code = 'demo/account-not-found';
+    throw err;
+  }
+
+  async function loginWithGoogle() {
+    const existing = readDoc('user', null);
+    if (existing) {
+      setUser(existing);
+      return existing;
+    }
+    // First "Google" sign-in: same as a fresh signup — starts empty, no
+    // pre-filled demo data (mirrors firebaseAuthProvider's behavior, where
+    // a first Google login also creates a blank profile).
+    seedEmptyAccount();
+    const newUser = { ...emptyProfile({ name: 'Usuário NOVA', email: 'demo.google@nova.app' }), onboarded: false };
     setUser(newUser);
     return newUser;
   }
 
-  async function loginWithGoogle() {
-    return login({ email: 'demo.google@nova.app' });
+  // The explicit "quick look" entry point — pre-filled with the full demo
+  // dataset so the app can be explored without adding anything.
+  async function startDemo() {
+    seedDemoAccount();
+    const newUser = { ...buildDemoUser(), onboarded: true };
+    setUser(newUser);
+    return newUser;
   }
 
   function logout() {
@@ -115,6 +120,7 @@ export function useLocalAuthProvider() {
     signup,
     login,
     loginWithGoogle,
+    startDemo,
     logout,
     completeOnboarding,
     updateUser,
