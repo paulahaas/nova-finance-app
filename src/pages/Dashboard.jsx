@@ -36,7 +36,7 @@ export default function Dashboard() {
     // Mobile-first order (spec section 3): greeting → balance → available
     // money → NOVA Pulse → main goal → month summary → Copilot. Desktop
     // reflows the secondary rows into 2-column grids but keeps this order.
-    <div className="space-y-6">
+    <div className="space-y-6 md:space-y-8">
       <p className="text-[var(--color-text-dim)]">
         {greeting()}, {user?.name?.split(' ')[0]}
       </p>
@@ -77,7 +77,7 @@ export default function Dashboard() {
       </Panel>
 
       {mainGoal && (
-        <Link to="/app/goals">
+        <Link to="/app/goals" className="block">
           <Panel>
             <div className="flex items-center justify-between mb-3">
               <p className="font-medium">
@@ -120,14 +120,14 @@ export default function Dashboard() {
         </div>
       </Panel>
 
-      <Link to="/app/copilot">
+      <Link to="/app/copilot" className="block">
         <Panel className="shimmer-border hover:border-[var(--color-accent)] transition-colors">
           <p className="font-medium mb-1">Copilot</p>
           <p className="text-sm text-[var(--color-text-dim)]">{primaryRecommendation(transactions)}</p>
         </Panel>
       </Link>
 
-      <Link to="/app/can-i-buy">
+      <Link to="/app/can-i-buy" className="block">
         <Panel className="flex items-center gap-4 hover:border-[var(--color-accent)] transition-colors">
           <span className="flex items-center justify-center w-11 h-11 rounded-full bg-[var(--color-accent-soft)] shrink-0">
             <ShoppingBag size={20} className="text-[var(--color-accent)]" />

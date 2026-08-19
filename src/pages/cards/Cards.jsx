@@ -22,7 +22,7 @@ export default function Cards() {
   const { cards, banks, addCard } = useData();
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ name: '', bankId: '', type: 'credit', limit: '', dueDay: '' });
+  const [form, setForm] = useState({ name: '', bankId: '', type: 'credit', limit: '', dueDay: '', last4: '', expiry: '' });
 
   const permission = canAddCard(user, cards.length);
 
@@ -44,8 +44,10 @@ export default function Cards() {
       type: form.type,
       limit: hasCredit ? Number(form.limit) || 0 : 0,
       dueDay: hasCredit ? Number(form.dueDay) || null : null,
+      last4: form.last4.replace(/\D/g, '').slice(0, 4) || null,
+      expiry: form.expiry.trim() || null,
     });
-    setForm({ name: '', bankId: '', type: 'credit', limit: '', dueDay: '' });
+    setForm({ name: '', bankId: '', type: 'credit', limit: '', dueDay: '', last4: '', expiry: '' });
     setShowAdd(false);
   }
 
@@ -126,6 +128,28 @@ export default function Cards() {
               </>
             )}
 
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="Últimos 4 dígitos"
+                value={form.last4}
+                onChange={(e) => setForm((f) => ({ ...f, last4: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
+              />
+              <Input
+                inputMode="numeric"
+                maxLength={5}
+                placeholder="Validade (MM/AA)"
+                value={form.expiry}
+                onChange={(e) => setForm((f) => ({ ...f, expiry: e.target.value }))}
+              />
+            </div>
+            {/* Deliberately no full card number or CVV field — this app
+                tracks spending, it doesn't process payments, and CVV must
+                never be stored anywhere under PCI-DSS. Last 4 digits +
+                expiry is the same minimal identifier real banking/budget
+                apps show; don't "complete" this form with more than that. */}
+
             <div className="flex gap-3">
               <Button type="submit" className="flex-1">
                 Adicionar
@@ -186,6 +210,7 @@ function CardFlip({ card, bank }) {
                 {TYPE_LABEL[card.type] ?? 'Crédito'}
                 {bank ? ` · ${bank.name}` : ''}
               </p>
+              {card.last4 && <p className="text-xs text-[var(--color-text-faint)] tabular mt-0.5">•••• {card.last4}</p>}
             </div>
             <span className="text-[var(--color-text-faint)] text-xs shrink-0">Toque para virar ↻</span>
           </div>
@@ -231,11 +256,20 @@ function CardFlip({ card, bank }) {
                 <span className="text-[var(--color-text-dim)]">Vencimento</span>
                 <span className="font-medium">{card.dueDay ? `Dia ${card.dueDay}` : '—'}</span>
               </div>
+              {card.expiry && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-[var(--color-text-dim)]">Validade do cartão</span>
+                  <span className="font-medium tabular">{card.expiry}</span>
+                </div>
+              )}
             </div>
           ) : (
-            <p className="text-sm text-[var(--color-text-dim)] text-center">
-              Cartões de débito não geram fatura — os gastos saem direto do saldo{bank ? ` da ${bank.name}` : ''}.
-            </p>
+            <div className="text-center space-y-2">
+              <p className="text-sm text-[var(--color-text-dim)]">
+                Cartões de débito não geram fatura — os gastos saem direto do saldo{bank ? ` da ${bank.name}` : ''}.
+              </p>
+              {card.expiry && <p className="text-sm font-medium tabular">Validade: {card.expiry}</p>}
+            </div>
           )}
         </Panel>
       </div>

@@ -23,7 +23,7 @@ export default function More() {
       <h1 className="text-2xl font-semibold">Mais</h1>
 
       {plan.id === 'free' && (
-        <Link to="/pro">
+        <Link to="/pro" className="block">
           <Panel className="flex items-center justify-between bg-[var(--color-accent-soft)] border-[var(--color-accent-dim)]">
             <div className="flex items-center gap-3">
               <Crown size={22} className="text-[var(--color-accent)]" />

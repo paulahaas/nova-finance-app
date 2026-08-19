@@ -49,6 +49,8 @@ export function buildDemoCards() {
       currentInvoice: 1240,
       nextInvoice: 610,
       dueDay: 10,
+      last4: '4521',
+      expiry: '08/29',
     },
   ];
 }
