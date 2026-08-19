@@ -1,0 +1,47 @@
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import copilotRouter from './routes/copilot.js';
+import stripeRouter from './routes/stripe.js';
+import plansRouter from './routes/plans.js';
+import { isFirebaseAdminConfigured } from './services/firebaseAdmin.js';
+import { isStripeConfigured, isWebhookConfigured } from './services/paymentService.js';
+
+const app = express();
+const PORT = process.env.PORT || 8787;
+
+app.use(cors());
+
+// Stripe's webhook signature check needs the raw, untouched request body —
+// this must be registered before the global express.json() below (which
+// no-ops on a body express.raw() already parsed, so ordering is safe).
+app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
+app.use(express.json());
+
+app.get('/api/health', (_req, res) => {
+  res.json({
+    status: 'ok',
+    aiConfigured: Boolean(process.env.ANTHROPIC_API_KEY),
+    firebaseAdminConfigured: isFirebaseAdminConfigured,
+    stripeConfigured: isStripeConfigured,
+  });
+});
+
+app.use('/api/copilot', copilotRouter);
+app.use('/api/stripe', stripeRouter);
+app.use('/api/plans', plansRouter);
+
+app.listen(PORT, () => {
+  console.log(`NOVA API listening on http://localhost:${PORT}`);
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.warn('ANTHROPIC_API_KEY not set — Copilot will run in demo mode on the client.');
+  }
+  if (!isFirebaseAdminConfigured) {
+    console.warn('Firebase Admin not configured — authenticated routes (Stripe checkout/portal) will return 503.');
+  }
+  if (!isStripeConfigured) {
+    console.warn('Stripe not configured — subscribing to NOVA Pro will run in demo mode on the client.');
+  } else if (!isWebhookConfigured) {
+    console.warn('STRIPE_WEBHOOK_SECRET not set — subscription status updates from Stripe will not sync.');
+  }
+});

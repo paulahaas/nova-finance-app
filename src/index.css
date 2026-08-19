@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+
+  /* NOVA palette — dark by default */
+  --color-bg: #0a0a0a;
+  --color-bg-elevated: #121212;
+  --color-surface: #161616;
+  --color-surface-2: #1e1e1e;
+  --color-border: #262626;
+  --color-graphite: #2a2a2a;
+
+  --color-text: #f5f5f5;
+  --color-text-dim: #a3a3a3;
+  --color-text-faint: #6b6b6b;
+
+  --color-accent: #e11d2f;
+  --color-accent-dim: #7f1420;
+  --color-accent-soft: rgba(225, 29, 47, 0.12);
+
+  --color-positive: #34d399;
+  --color-negative: #e11d2f;
+  --color-warning: #f5b942;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: white;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-graphite);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Safe-area helpers for notches / Dynamic Island / gesture bars */
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Form fields: 16px min font-size prevents iOS Safari from auto-zooming
+   the page on focus — a real bug, not a style preference. */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+/* Every touch target should clear the ~44px accessibility minimum. */
+button,
+a {
+  touch-action: manipulation;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+.animate-pulse-soft {
+  animation: pulse-soft 1.8s ease-in-out infinite;
+}

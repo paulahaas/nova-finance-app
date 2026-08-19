@@ -1,0 +1,68 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Panel from '../../components/Panel';
+import Button from '../../components/Button';
+import ProgressBar from '../../components/ProgressBar';
+import UpgradeSheet from '../../components/UpgradeSheet';
+import { useAuth } from '../../contexts/AuthContext';
+import { useData } from '../../contexts/DataContext';
+import { canCreateGoal } from '../../config/permissions';
+import { formatCurrency, formatDateLong } from '../../utils/format';
+
+export default function Goals() {
+  const { user } = useAuth();
+  const { goals } = useData();
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const navigate = useNavigate();
+
+  const permission = canCreateGoal(user, goals.length);
+
+  function handleAdd() {
+    if (!permission.allowed) {
+      setShowUpgrade(true);
+      return;
+    }
+    navigate('/app/goals/new');
+  }
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold">Minhas metas</h1>
+
+      <div className="space-y-4">
+        {goals.map((g) => {
+          const pct = Math.round((g.saved / g.target) * 100);
+          return (
+            <Panel key={g.id}>
+              <div className="flex items-center justify-between mb-4">
+                <p className="font-medium">
+                  {g.emoji} {g.name}
+                </p>
+                <p className="text-sm text-[var(--color-text-dim)]">{pct}%</p>
+              </div>
+              <ProgressBar value={g.saved} max={g.target} />
+              <div className="flex justify-between mt-3 text-sm text-[var(--color-text-dim)]">
+                <span>
+                  {formatCurrency(g.saved)} de {formatCurrency(g.target)}
+                </span>
+                <span>Previsão: {formatDateLong(g.deadline)}</span>
+              </div>
+            </Panel>
+          );
+        })}
+      </div>
+
+      <Button variant="outline" className="w-full" onClick={handleAdd}>
+        + Nova meta
+      </Button>
+
+      {showUpgrade && (
+        <UpgradeSheet
+          title="Limite de metas atingido"
+          description="No plano Free você pode ter até 3 metas. Faça upgrade para o NOVA Pro e crie metas ilimitadas."
+          onClose={() => setShowUpgrade(false)}
+        />
+      )}
+    </div>
+  );
+}
