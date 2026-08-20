@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../../components/Button';
 import ProgressBar from '../../components/ProgressBar';
+import SelectMenu from '../../components/SelectMenu';
 import { useAuth } from '../../contexts/AuthContext';
+
+const PAY_DAY_OPTIONS = Array.from({ length: 28 }, (_, i) => ({ value: i + 1, label: `Dia ${i + 1}` }));
 
 const GOALS = [
   { id: 'economizar', label: 'Economizar' },
@@ -72,17 +75,12 @@ export default function Onboarding() {
 
         {current === 'payDay' && (
           <Step title="Quando você recebe?">
-            <select
+            <SelectMenu
               value={payDay}
-              onChange={(e) => setPayDay(e.target.value)}
-              className="w-full text-lg bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-3 outline-none"
-            >
-              {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
-                <option key={d} value={d}>
-                  Dia {d}
-                </option>
-              ))}
-            </select>
+              onChange={setPayDay}
+              options={PAY_DAY_OPTIONS}
+              triggerClassName="w-full flex items-center justify-between gap-2 text-lg bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-4 py-3 min-h-[52px] outline-none"
+            />
             <Button className="mt-10" onClick={next}>
               Continuar
             </Button>

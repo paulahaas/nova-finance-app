@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import Panel from '../../components/Panel';
 import Button from '../../components/Button';
+import SelectMenu from '../../components/SelectMenu';
 import { useData } from '../../contexts/DataContext';
 import { formatCurrency, formatDate } from '../../utils/format';
 import clsx from 'clsx';
@@ -11,6 +12,11 @@ const FILTERS = [
   { id: 'expense', label: 'Saídas' },
 ];
 
+const TYPE_OPTIONS = [
+  { value: 'expense', label: 'Saída' },
+  { value: 'income', label: 'Entrada' },
+];
+
 export default function Transactions() {
   const { transactions, banks, categories, addTransaction } = useData();
   const [filter, setFilter] = useState('all');
@@ -18,6 +24,10 @@ export default function Transactions() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ description: '', amount: '', category: categories[0], type: 'expense' });
+
+  const categoryOptions = categories.map((c) => ({ value: c, label: c }));
+  const bankFilterOptions = [{ value: 'all', label: 'Todos os bancos' }, ...banks.map((b) => ({ value: b.id, label: b.name }))];
+  const categoryFilterOptions = [{ value: 'all', label: 'Todas as categorias' }, ...categoryOptions];
 
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
@@ -68,26 +78,21 @@ export default function Transactions() {
               onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
               className="rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)] px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)]"
             />
-            <select
+            <SelectMenu
               value={form.type}
-              onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
-              className="rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)] px-4 py-3 text-sm outline-none"
-            >
-              <option value="expense">Saída</option>
-              <option value="income">Entrada</option>
-            </select>
-            <select
+              onChange={(v) => setForm((f) => ({ ...f, type: v }))}
+              options={TYPE_OPTIONS}
+            />
+            <SelectMenu
               value={form.category}
-              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-              className="rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)] px-4 py-3 text-sm outline-none disabled:opacity-40"
-              disabled={form.type === 'income'}
-            >
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setForm((f) => ({ ...f, category: v }))}
+              options={categoryOptions}
+              triggerClassName={
+                form.type === 'income'
+                  ? 'flex items-center justify-between gap-2 w-full min-h-[44px] rounded-xl px-4 py-3.5 bg-[var(--color-surface-2)] border border-[var(--color-border)] text-sm text-[var(--color-text-faint)] opacity-40 pointer-events-none'
+                  : undefined
+              }
+            />
             <div className="flex gap-3 md:col-span-2">
               <Button type="submit" className="flex-1">
                 Salvar
@@ -115,30 +120,8 @@ export default function Transactions() {
             {f.label}
           </button>
         ))}
-        <select
-          value={bankFilter}
-          onChange={(e) => setBankFilter(e.target.value)}
-          className="rounded-full px-4 min-h-[40px] text-sm border border-[var(--color-border)] bg-transparent text-[var(--color-text-dim)]"
-        >
-          <option value="all">Todos os bancos</option>
-          {banks.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          className="rounded-full px-4 min-h-[40px] text-sm border border-[var(--color-border)] bg-transparent text-[var(--color-text-dim)]"
-        >
-          <option value="all">Todas as categorias</option>
-          {categories.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
+        <SelectMenu value={bankFilter} onChange={setBankFilter} options={bankFilterOptions} pill />
+        <SelectMenu value={categoryFilter} onChange={setCategoryFilter} options={categoryFilterOptions} pill />
       </div>
 
       <div className="space-y-2">

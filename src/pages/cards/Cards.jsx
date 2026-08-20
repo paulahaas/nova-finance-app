@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import Panel from '../../components/Panel';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
+import SelectMenu from '../../components/SelectMenu';
 import ProgressBar from '../../components/ProgressBar';
 import UpgradeSheet from '../../components/UpgradeSheet';
 import { useAuth } from '../../contexts/AuthContext';
@@ -72,18 +73,11 @@ export default function Cards() {
             />
 
             {banks.length > 0 && (
-              <select
+              <SelectMenu
                 value={form.bankId}
-                onChange={(e) => setForm((f) => ({ ...f, bankId: e.target.value }))}
-                className="rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)] px-4 py-3.5 outline-none"
-              >
-                <option value="">Sem banco vinculado</option>
-                {banks.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setForm((f) => ({ ...f, bankId: v }))}
+                options={[{ value: '', label: 'Sem banco vinculado' }, ...banks.map((b) => ({ value: b.id, label: b.name }))]}
+              />
             )}
 
             <div>
