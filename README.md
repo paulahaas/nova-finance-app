@@ -1,230 +1,107 @@
 # NOVA
 
-**Seu dinheiro. Sob seu controle.**
+Seu dinheiro. Sob seu controle.
 
-NOVA é um aplicativo de organização financeira pessoal com inteligência artificial: contas bancárias, cartões, metas, orçamento, previsões e um Copilot financeiro — em uma interface escura, minimalista e premium.
+App de organização financeira pessoal: contas, cartões, metas, orçamento, previsões e um assistente (Copilot) pra responder dúvidas do tipo "posso comprar isso?". Tema escuro, minimalista.
 
-## Funcionalidades
+Rode sem configurar nada e o app já funciona inteiro em modo demonstração (dados fictícios no `localStorage`). Configure Firebase/Stripe/Pluggy e ele vira um app de produção de verdade — login real, banco de dados real, assinatura e conexão bancária reais.
 
-- Dashboard com saldo disponível, dinheiro disponível até o próximo salário e orçamento diário
-- Bancos, contas e cartões (com limite no plano gratuito)
-- Transações com filtros por tipo, banco, categoria e período
-- Metas financeiras com cenários de quanto guardar por mês
-- Assinaturas recorrentes (total mensal/anual)
-- **Posso comprar?** — analisa uma compra contra saldo, renda, cartões e metas
-- **Copilot** — assistente financeiro conversacional (limite mensal no plano Free)
-- Insights automáticos, previsão financeira e relatórios (básicos no Free, avançados no Pro)
-- Alertas e gamificação (XP, nível, conquistas)
-- Onboarding guiado e modo de demonstração com dados fictícios (nenhum banco real é necessário para explorar o app)
-- Autenticação e dados reais via **Firebase** (Auth + Firestore) e assinatura real via **Stripe Checkout** — ambos opcionais: sem configurá-los, o app roda 100% em modo de demonstração local
+## Stack
 
-## Mobile: uma experiência própria, não o desktop encolhido
+- React 19 + Vite + Tailwind v4, React Router, Recharts
+- Node/Express no backend (só necessário pro Copilot com IA real, Stripe e Open Finance)
+- Firebase (Auth + Firestore) quando configurado — senão cai pra `localStorage`
+- Stripe pra assinatura do plano Pro
+- Pluggy pra conexão bancária real (Open Finance)
 
-Abaixo de `md` (768px), o app troca a sidebar por uma navegação inferior de 5 destinos — **Home · Money · Goals · AI · More** ([`src/layouts/BottomNav.jsx`](src/layouts/BottomNav.jsx)) — e a Home segue uma hierarquia própria para uma mão só (saudação → saldo → dinheiro disponível → **NOVA Pulse** → meta principal → resumo do mês → recomendação do Copilot), não o mesmo empilhamento do desktop. `Money` reúne Bancos e Transações em abas ([`src/pages/money/Money.jsx`](src/pages/money/Money.jsx)) e `More` concentra Insights, Cartões, Assinaturas, Perfil e Configurações ([`src/pages/More.jsx`](src/pages/More.jsx)) — ambos reaproveitam as páginas que o desktop já lista na sidebar, sem duplicar lógica. Todo campo numérico abre teclado apropriado (`inputMode`) e usa fonte de 16px para não disparar o zoom automático do iOS Safari; a navegação inferior e a bottom sheet do NOVA Pro respeitam `env(safe-area-inset-*)` para notch/Dynamic Island/gesture bar.
-
-## Planos
-
-| | NOVA Free | NOVA Pro |
-|---|---|---|
-| Preço | Grátis | R$ 14,90/mês |
-| Bancos | até 2 | ilimitado |
-| Metas | até 3 | ilimitado |
-| Cartões | até 3 | ilimitado |
-| Copilot | 20 mensagens/mês | ilimitado |
-| Relatórios e insights avançados | — | ✓ |
-| Histórico completo | — | ✓ |
-| Exportação de dados | — | ✓ |
-
-Todos os limites e preços vivem em **um único arquivo** — [`src/config/plans.js`](src/config/plans.js) — e todo o código de feature consulta [`src/config/permissions.js`](src/config/permissions.js) (`canUseFeature`, `canAddBank`, `canCreateGoal`, ...) para checar acesso. Mudar um limite ou o preço do Pro não exige tocar em nenhuma tela.
-
-## Tecnologias
-
-- **Frontend**: React 19, Vite, React Router, Tailwind CSS v4, Recharts, Lucide Icons
-- **Backend**: Node.js + Express
-- **Autenticação e banco de dados**: Firebase Auth + Firestore (`firebase` no cliente, `firebase-admin` no servidor) — com fallback automático para `localStorage` quando não configurado
-- **Pagamento**: Stripe Checkout + Billing Portal + webhooks
-- **IA**: Anthropic Claude via `@anthropic-ai/sdk`, chamado apenas pelo servidor
-
-## Instalação
+## Rodando local
 
 ```bash
 npm install
-```
-
-Copie o arquivo de variáveis de ambiente:
-
-```bash
 cp .env.example .env
-```
-
-## Execução
-
-Frontend (porta 5173):
-
-```bash
 npm run dev
 ```
 
-Backend (porta 8787) — necessário apenas para o Copilot usar IA real; sem ele, o Copilot funciona em modo de demonstração local:
+Abre em `localhost:5173`. Isso já é suficiente pra usar o app inteiro — criar conta, adicionar bancos/cartões/transações/metas, tudo fica salvo no navegador.
+
+Se quiser o backend também (IA de verdade, pagamento, Open Finance):
 
 ```bash
 npm run server
 ```
 
-Build de produção:
+## Funcionalidades
 
-```bash
-npm run build
-npm run preview
-```
+- Dashboard com saldo, dinheiro disponível até o próximo salário e gasto por dia
+- Bancos, contas e cartões (crédito/débito, com limite, fatura e vencimento)
+- Transações com filtro por tipo/banco/categoria
+- Metas com foto de capa e projeção de quanto guardar por mês
+- Assinaturas recorrentes com total mensal/anual
+- "Posso comprar?" — cruza uma compra com saldo, renda e metas antes de você decidir
+- Copilot conversacional (usa IA real se configurada, senão responde com regras usando seus próprios dados)
+- Relatórios, insights e previsão financeira
+- Navegação própria pro mobile (bottom nav, não é o desktop encolhido)
+- Plano Free x Pro com limites configuráveis num arquivo só (`src/config/plans.js`)
 
 ## Variáveis de ambiente
 
-Veja [`.env.example`](.env.example) para a lista completa e os comentários de cada uma. Resumo:
+Tudo em `.env.example`, com comentário em cada uma. As que importam:
 
-| Variável | Onde é usada | Descrição |
-|---|---|---|
-| `VITE_API_URL` | Frontend | URL do backend (`server/index.js`) |
-| `APP_URL` | Backend | URL pública do frontend — usada nas URLs de retorno do Stripe |
-| `ANTHROPIC_API_KEY` | Backend | Chave da API da Anthropic para o Copilot. **Nunca** é exposta ao frontend — sem ela, o backend responde 503 e o cliente cai automaticamente no modo de demonstração |
-| `VITE_FIREBASE_*` | Frontend | Config pública do projeto Firebase (Auth + Firestore) |
-| `FIREBASE_PROJECT_ID` / `FIREBASE_CLIENT_EMAIL` / `FIREBASE_PRIVATE_KEY` | Backend | Credenciais da conta de serviço (Firebase Admin), para verificar tokens e para o webhook do Stripe escrever no Firestore |
-| `STRIPE_SECRET_KEY` / `STRIPE_PRICE_ID` / `STRIPE_WEBHOOK_SECRET` | Backend | Assinatura real do NOVA Pro — ver seção Pagamento abaixo |
-| `OPEN_FINANCE_CLIENT_ID` / `OPEN_FINANCE_CLIENT_SECRET` | Backend | Reservado para a futura integração com Open Finance |
+- `ANTHROPIC_API_KEY` — Copilot com IA de verdade (Claude). Sem isso, respostas locais.
+- `VITE_FIREBASE_*` + `FIREBASE_PROJECT_ID`/`FIREBASE_CLIENT_EMAIL`/`FIREBASE_PRIVATE_KEY` — conta e banco de dados reais
+- `STRIPE_SECRET_KEY`/`STRIPE_PRICE_ID`/`STRIPE_WEBHOOK_SECRET` — assinatura Pro real
+- `PLUGGY_CLIENT_ID`/`PLUGGY_CLIENT_SECRET`/`PLUGGY_WEBHOOK_SECRET` — conexão bancária real
 
-Todas as variáveis são opcionais individualmente: sem `VITE_FIREBASE_*`, o app usa `localStorage`; sem `STRIPE_*`, assinar o Pro fica em modo de demonstração; sem `ANTHROPIC_API_KEY`, o Copilot usa respostas locais.
+Cada uma é opcional e independente das outras — sem Firebase o app usa `localStorage`, sem Stripe o upgrade fica em modo demo, sem Pluggy o cadastro de banco continua manual.
 
-## Firebase (Auth + Firestore)
+## Firebase
 
-Quando `VITE_FIREBASE_API_KEY`/`VITE_FIREBASE_PROJECT_ID` **não** estão definidas, o app roda 100% em modo de demonstração local (`localStorage`, ver [`src/services/storageService.js`](src/services/storageService.js)) — é assim que o projeto funciona logo após o `npm install`, sem nenhum setup. Quando estão definidas, `src/services/firebase.js` inicializa o Firebase de verdade e todo o app passa a usar:
+1. Cria um projeto em [console.firebase.google.com](https://console.firebase.google.com)
+2. Ativa Authentication (e-mail/senha + Google) e cria um Firestore em modo produção
+3. Registra um app Web e copia as chaves pro `.env` (`VITE_FIREBASE_*`)
+4. Em Configurações → Contas de serviço, gera uma chave privada e copia `project_id`/`client_email`/`private_key` pro `.env`
+5. Sobe as regras: `npx firebase-tools deploy --only firestore:rules --project SEU_PROJECT_ID`
 
-- **Auth**: e-mail/senha e Google, via `src/contexts/authProviders/firebaseAuthProvider.js`
-- **Firestore**: um documento `users/{uid}` para o perfil (renda, dia do salário, plano, assinatura, ...) e subcoleções `users/{uid}/banks|accounts|cards|transactions|goals|subscriptions`, via `src/contexts/dataProviders/firestoreDataProvider.js`
+Uma conta criada de verdade (não a demo) começa vazia — sem os bancos/metas de exemplo.
 
-O ponto de troca entre os dois modos é só o `isFirebaseConfigured` exportado por `firebase.js` — nenhuma tela sabe qual dos dois está ativo.
+## Stripe (assinatura Pro)
 
-**Como configurar:**
+1. Conta em [dashboard.stripe.com](https://dashboard.stripe.com), modo teste pra começar
+2. Secret key pro `.env`
+3. `npm run setup:stripe` cria o produto e o preço automaticamente a partir de `src/config/plans.js`
+4. Pra testar webhook local: `stripe listen --forward-to localhost:8787/api/stripe/webhook`
 
-1. Crie um projeto em [console.firebase.google.com](https://console.firebase.google.com)
-2. Ative **Authentication** → métodos de login **E-mail/senha** e **Google**
-3. Crie um banco **Firestore** (modo produção)
-4. Em *Configurações do projeto → Geral → Seus apps*, crie um app Web e copie as chaves para `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID` no `.env`
-5. Em *Configurações do projeto → Contas de serviço*, clique em **Gerar nova chave privada** e copie `project_id`, `client_email` e `private_key` do JSON baixado para `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`
-6. Publique as regras de segurança (garantem que cada usuário só acessa seus próprios dados — seção 42 do escopo):
+## Open Finance (Pluggy)
 
-   ```bash
-   npx firebase-tools login
-   npx firebase-tools deploy --only firestore:rules --project SEU_PROJECT_ID
-   ```
+Conexão bancária real usando a [Pluggy](https://pluggy.ai) como intermediária — o app nunca vê a senha do banco do usuário, isso acontece dentro do widget deles. Precisa de Firebase configurado (a sincronização escreve no Firestore).
 
-   (ou cole o conteúdo de [`firestore.rules`](firestore.rules) manualmente no console do Firestore)
+1. Conta em [dashboard.pluggy.ai](https://dashboard.pluggy.ai) (tem sandbox grátis)
+2. `CLIENT_ID`/`CLIENT_SECRET` pro `.env`
+3. Registra o webhook (`/api/open-finance/webhook`) com um header `X-Webhook-Secret` igual ao que você definir em `PLUGGY_WEBHOOK_SECRET`
 
-Diferente do modo demo, uma conta real criada via Firebase **começa vazia** — sem bancos/metas fictícios — porque é o caminho de produção de verdade.
+Sem essas variáveis o botão de conectar banco automaticamente simplesmente não aparece — cadastro manual continua normal.
 
-## Inteligência artificial (Copilot)
-
-- O frontend nunca guarda uma API key. Ele chama `POST /api/copilot` (ver [`src/services/aiService.js`](src/services/aiService.js)).
-- O backend ([`server/routes/copilot.js`](server/routes/copilot.js) + [`server/services/aiService.js`](server/services/aiService.js)) usa a Claude API com a chave lida de `ANTHROPIC_API_KEY`.
-- Se a chave não estiver configurada, o backend recusa a chamada e o cliente usa uma resposta local baseada em regras — sempre deixando claro que está em modo de demonstração.
-
-## Open Finance (conexão real de bancos, via Pluggy)
-
-NOVA não se conecta ao Banco Central diretamente — isso só vale para instituições financeiras reguladas. A conexão real usa a [Pluggy](https://pluggy.ai), uma agregadora certificada do Open Finance brasileiro: o backend usa o SDK oficial `pluggy-sdk`, o frontend usa o widget oficial `react-pluggy-connect`. Sem `PLUGGY_CLIENT_ID`/`PLUGGY_CLIENT_SECRET` configuradas, o botão "Conectar banco automaticamente" simplesmente não aparece em Bancos — o cadastro manual continua funcionando normalmente (é o que o modo demo sempre usou).
-
-**Como funciona:**
-
-1. O usuário clica em "Conectar banco automaticamente" → o frontend pede um *connect token* ao backend (`POST /api/open-finance/connect-token`, autenticado)
-2. O widget da Pluggy abre, o usuário escolhe o banco e autoriza o acesso — a NOVA nunca vê a senha do banco, isso acontece inteiramente dentro do widget da Pluggy
-3. No sucesso, o frontend chama `POST /api/open-finance/sync` com o `itemId` retornado; o backend busca contas e transações via `pluggy-sdk` e grava nas mesmas coleções do Firestore que o resto do app já lê (`users/{uid}/banks|accounts|transactions`), marcadas com `source: "open-finance"` para não se confundirem com lançamentos manuais
-4. Atualizações posteriores (nova transação, etc.) chegam via webhook (`POST /api/open-finance/webhook`) e resincronizam automaticamente
-
-**Como configurar:**
-
-1. Crie uma conta em [dashboard.pluggy.ai](https://dashboard.pluggy.ai) (tem sandbox gratuito para testar antes de ir a produção)
-2. Copie `CLIENT_ID` e `CLIENT_SECRET` para `PLUGGY_CLIENT_ID`/`PLUGGY_CLIENT_SECRET` no `.env`
-3. Defina qualquer valor em `PLUGGY_WEBHOOK_SECRET` e registre o webhook no dashboard da Pluggy apontando para `https://SEU_DOMINIO/api/open-finance/webhook`, com um header customizado `X-Webhook-Secret` igual a esse valor (a Pluggy não assina webhooks, só suporta headers customizados — é assim que validamos que a chamada é legítima)
-4. Requer Firebase configurado (a sincronização grava no Firestore do usuário autenticado)
-
-O fluxo completo vive em [`server/routes/openFinance.js`](server/routes/openFinance.js) + [`server/services/openFinanceService.js`](server/services/openFinanceService.js).
-
-## Pagamento (assinatura NOVA Pro via Stripe)
-
-Sem `STRIPE_SECRET_KEY`/`STRIPE_PRICE_ID` configuradas, assinar o NOVA Pro roda em **modo de demonstração**, claramente identificado na tela `/pro`, que apenas altera o plano localmente/no Firestore sem cobrar nada. Com essas variáveis definidas, o fluxo passa a ser real: Stripe Checkout hospeda o pagamento (o app nunca vê dados de cartão), e um webhook mantém o plano do usuário sincronizado no Firestore.
-
-**Como configurar (requer Firebase configurado — o webhook grava no Firestore):**
-
-1. Crie uma conta em [dashboard.stripe.com](https://dashboard.stripe.com) (comece em modo de teste)
-2. Copie a **Secret key** (*Desenvolvedores → Chaves de API*) para `STRIPE_SECRET_KEY`
-3. Crie o produto "NOVA Pro" com o preço mensal automaticamente:
-
-   ```bash
-   npm run setup:stripe
-   ```
-
-   Isso cria um Product + Price recorrente no Stripe usando o valor de `PLANS.pro.price.monthly` em [`src/config/plans.js`](src/config/plans.js) — mudar o preço ali e rodar o script de novo nunca duplica o Price (é idempotente por `lookup_key`). Copie o `price_...` impresso para `STRIPE_PRICE_ID`.
-4. Para testar webhooks localmente, use a [Stripe CLI](https://stripe.com/docs/stripe-cli):
-
-   ```bash
-   stripe listen --forward-to localhost:8787/api/stripe/webhook
-   ```
-
-   Copie o `whsec_...` impresso para `STRIPE_WEBHOOK_SECRET`. Em produção, crie o endpoint em *Desenvolvedores → Webhooks* apontando para `https://SEU_DOMINIO/api/stripe/webhook`, escutando `checkout.session.completed`, `customer.subscription.updated` e `customer.subscription.deleted`.
-5. Rode `npm run server` e `npm run dev` — "Assinar NOVA Pro" agora redireciona para o Stripe Checkout de verdade, e "Gerenciar assinatura" no Perfil abre o Billing Portal do Stripe.
-
-O fluxo completo vive em [`server/routes/stripe.js`](server/routes/stripe.js) + [`server/services/paymentService.js`](server/services/paymentService.js). Os campos `plan`, `subscriptionStatus`, `subscriptionId`, `stripeCustomerId`, `subscriptionStart`, `subscriptionEnd` no documento `users/{uid}` são escritos exclusivamente pelo webhook (usando o Admin SDK, que ignora `firestore.rules`) — o cliente nunca pode se auto-promover a Pro escrevendo direto no Firestore.
-
-O plano anual (seção 36 do escopo do produto) já está previsto em `PLANS[...].price.annual` em `src/config/plans.js`, pronto para virar um segundo Price no Stripe e ser exposto na UI quando fizer sentido.
-
-## Estrutura do projeto
+## Estrutura
 
 ```
-NOVA/
-├── public/
-├── src/
-│   ├── assets/
-│   ├── components/         # Button, Panel, Input, ProgressBar, UpgradeSheet, RequireAuth...
-│   ├── pages/               # uma pasta por área (auth, onboarding, banks, goals, money, ...)
-│   │   ├── money/Money.jsx      # hub mobile — abas Contas/Transações
-│   │   └── More.jsx             # menu mobile — Insights, Cartões, Assinaturas, Perfil...
-│   ├── layouts/             # AppLayout, Sidebar (desktop), BottomNav (mobile, 5 destinos)
-│   ├── hooks/
-│   ├── services/            # firebase.js, aiService, financeService, insightsService, paymentService, storageService
-│   ├── contexts/
-│   │   ├── AuthContext.jsx      # picks firebaseAuthProvider or localAuthProvider
-│   │   ├── DataContext.jsx      # picks firestoreDataProvider or localDataProvider
-│   │   ├── authProviders/
-│   │   └── dataProviders/
-│   ├── utils/                # format.js, authErrors.js
-│   ├── data/                 # demoData.js (local/demo mode only)
-│   ├── config/                # plans.js, permissions.js — regras de plano centralizadas
-│   ├── App.jsx
-│   └── main.jsx
-├── server/
-│   ├── routes/                # copilot.js, stripe.js, openFinance.js, plans.js
-│   ├── services/              # aiService.js, paymentService.js (Stripe), openFinanceService.js (Pluggy), firebaseAdmin.js
-│   ├── middleware/            # auth.js — verifica o ID token do Firebase
-│   └── index.js
-├── scripts/
-│   └── create-stripe-price.js  # cria o Product/Price do NOVA Pro no Stripe
-├── firestore.rules              # cada usuário só acessa seus próprios dados
-├── firestore.indexes.json
-├── firebase.json
-├── .env.example
-├── .gitignore
-├── package.json
-├── README.md
-└── vite.config.js
+src/
+  pages/         uma pasta por área (banks, cards, goals, transactions, copilot, ...)
+  components/    Button, Panel, Input, ProgressBar, UpgradeSheet...
+  contexts/      Auth e Data — cada um escolhe entre Firebase ou localStorage
+  services/      cálculos financeiros, IA, pagamento, open finance
+  config/        plans.js e permissions.js — regras de plano num lugar só
+
+server/
+  routes/        copilot, stripe, open-finance
+  services/       mesma coisa, do lado do backend
 ```
 
 ## Deploy
 
-- **Frontend**: qualquer host de estáticos (Vercel, Netlify, Cloudflare Pages) apontando `VITE_API_URL` para o backend publicado e com as `VITE_FIREBASE_*` de produção
-- **Backend**: qualquer runtime Node.js (Render, Fly.io, Railway, um servidor próprio) com as variáveis de ambiente do `.env` configuradas — lembre de trocar o endpoint do webhook do Stripe para a URL pública do backend
-- **Firestore**: publique `firestore.rules` no projeto de produção (`npx firebase-tools deploy --only firestore:rules --project SEU_PROJECT_ID`)
+Frontend em qualquer host estático (Vercel, Netlify), backend em qualquer runtime Node (Render, Railway). Lembrar de trocar o endpoint do webhook do Stripe/Pluggy pra URL pública depois do deploy.
 
-## Roadmap previsto
+## O que falta
 
-- Plano anual na UI (o Price já está previsto em `src/config/plans.js`)
-- Apps mobile nativos
-- Novos recursos de IA no Copilot
-- Motor de insights/alertas/gamificação server-side (hoje são estáticos no modo Firebase — ver `alerts`/`achievements` em `src/contexts/dataProviders/firestoreDataProvider.js`)
+- Plano anual (o preço já existe em `plans.js`, só falta expor na UI)
+- Insights/alertas gerados automaticamente no backend (hoje são fixos)
+- App mobile nativo
