@@ -60,6 +60,18 @@ async function authedFetch(getIdToken, path, body) {
   return data;
 }
 
+// /api/statements/quota is a GET (matches the /status convention used by
+// the other integrations), unlike /parse and /confirm which are POST.
+async function authedGet(getIdToken, path) {
+  const token = await getIdToken();
+  const res = await fetch(`${API_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Falha ao consultar');
+  return data;
+}
+
 function localQuota(user, importBatches) {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -69,7 +81,7 @@ function localQuota(user, importBatches) {
 }
 
 export async function getImportQuota({ getIdToken, user, importBatches }) {
-  if (isFirebaseConfigured) return authedFetch(getIdToken, '/api/statements/quota', {}).catch(() => localQuota(user, importBatches));
+  if (isFirebaseConfigured) return authedGet(getIdToken, '/api/statements/quota').catch(() => localQuota(user, importBatches));
   return localQuota(user, importBatches);
 }
 

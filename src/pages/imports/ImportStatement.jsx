@@ -34,6 +34,13 @@ export default function ImportStatement() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Banks load asynchronously from Firestore, so banks[0] can still be
+  // undefined at the useState() initializer above — pick a default once
+  // the list actually arrives, without overriding a choice the user made.
+  useEffect(() => {
+    if (!bankId && banks.length > 0) setBankId(banks[0].id);
+  }, [banks, bankId]);
+
   async function handleFile(file) {
     setError('');
     setFileInfo(null);
