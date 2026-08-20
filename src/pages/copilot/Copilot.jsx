@@ -9,17 +9,18 @@ import { getPlan, UNLIMITED } from '../../config/plans';
 import { askCopilot } from '../../services/aiService';
 
 const SUGGESTIONS = [
-  'Posso comprar um notebook?',
+  'Posso comprar um notebook de 3000?',
   'Onde estou gastando demais?',
   'Quanto preciso guardar?',
   'Quando atingirei minha meta?',
-  'Quanto terei daqui a um ano?',
-  'Como economizar R$ 500?',
+  'Como estão minhas faturas?',
+  'Me dá um resumo do mês',
+  'Me dá uma dica de economia',
 ];
 
 export default function Copilot() {
   const { user, updateUser } = useAuth();
-  const { computed, goals } = useData();
+  const { computed, goals, transactions, cards, subscriptions } = useData();
   const [messages, setMessages] = useState([
     { role: 'assistant', text: 'Olá! Sou o Copilot da NOVA, seu assistente financeiro pessoal. Pergunte qualquer coisa sobre seu dinheiro.' },
   ]);
@@ -46,8 +47,12 @@ export default function Copilot() {
       context: {
         available: computed.available,
         monthlyIncome: computed.monthIncome,
+        monthExpenses: computed.monthExpenses,
         dailyBudget: computed.daily,
         goals,
+        transactions,
+        cards,
+        subscriptions,
       },
     });
     setMessages((m) => [...m, { role: 'assistant', text: reply }]);
