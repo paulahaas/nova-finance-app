@@ -29,6 +29,15 @@
   box-sizing: border-box;
 }
 
+html {
+  /* Tells the browser to render its own native chrome (select dropdown
+     popups, date/time pickers, the scrollbar) in dark mode. Without this,
+     Windows renders those as light/white regardless of any CSS on the
+     element itself — this is the fix, not the custom colors below, which
+     only cover the parts of the box CSS can actually reach. */
+  color-scheme: dark;
+}
+
 html,
 body,
 #root {
@@ -78,6 +87,14 @@ input,
 select,
 textarea {
   font-size: 16px;
+}
+
+/* Belt-and-suspenders on top of color-scheme: dark above — explicit dark
+   styling for the dropdown list itself, in case a browser only partially
+   honors color-scheme for <option>. */
+select option {
+  background-color: var(--color-surface-2);
+  color: var(--color-text);
 }
 
 /* Every touch target should clear the ~44px accessibility minimum. */
