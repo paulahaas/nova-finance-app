@@ -30,3 +30,5 @@ NOVA-Finance-App.zip
 *.njsproj
 *.sln
 *.sw?
+
+.vercel
