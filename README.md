@@ -22,6 +22,8 @@ npm run server
 
 Dashboard, bancos/contas/cartões, transações, metas (com foto), assinaturas recorrentes, "posso comprar?", Copilot, relatórios e previsão, plano Free/Pro. Nav própria no mobile, não é o desktop espremido.
 
+Importação de extrato (CSV/OFX) categoriza sozinha o que reconhece por regra, usa um classificador próprio (TF-IDF, sem serviço externo) pro resto, aprende com as correções que você faz, detecta duplicata e assinatura recorrente antes de confirmar qualquer coisa.
+
 ## Integrações reais (opcionais)
 
 Cada uma cai pra modo demo se não tiver configurada — nenhuma quebra o app:
@@ -40,4 +42,12 @@ Duas decisões que valem mencionar: cartão salva só os últimos 4 dígitos e a
 
 ## Falta
 
-Plano anual na UI, insights automáticos (hoje são fixos), app nativo.
+Plano anual na UI, app nativo.
+
+## Testes
+
+```bash
+npm run test
+```
+
+Cobre a parte que mais importa acertar sozinha: parser de CSV/OFX, categorização, detecção de duplicata e de recorrência.

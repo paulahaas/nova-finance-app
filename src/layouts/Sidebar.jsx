@@ -9,6 +9,7 @@ import {
   Sparkles,
   BarChart3,
   User,
+  Upload,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../contexts/AuthContext';
@@ -21,6 +22,7 @@ const ITEMS = [
   { to: '/app/cards', label: 'Cartões', icon: CreditCard },
   { to: '/app/goals', label: 'Metas', icon: Target },
   { to: '/app/subscriptions', label: 'Assinaturas', icon: Repeat },
+  { to: '/app/imports', label: 'Importar extrato', icon: Upload },
   { to: '/app/copilot', label: 'Copilot', icon: Sparkles },
   { to: '/app/reports', label: 'Análises', icon: BarChart3 },
   { to: '/app/profile', label: 'Perfil', icon: User },

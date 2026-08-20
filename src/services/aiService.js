@@ -7,7 +7,7 @@
 // canned demo.
 
 import { evaluatePurchase, monthlyGoalContribution } from './financeService';
-import { topExpenseCategory } from './insightsService';
+import { topExpenseCategory, categoryAnomalies } from './insightsService';
 import { formatCurrency } from '../utils/format';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
@@ -44,6 +44,7 @@ function localFallback(message, context) {
     transactions = [],
     cards = [],
     subscriptions = [],
+    recurringPatterns = [],
   } = context ?? {};
 
   if (GREETINGS.some((g) => q === g || q.startsWith(`${g} `))) {
@@ -78,6 +79,28 @@ function localFallback(message, context) {
     return `Sua maior categoria de gasto é ${top.category}, com ${formatCurrency(top.amount)} até agora. Vale revisar se dá pra cortar algo ali.`;
   }
 
+  if (q.includes('maiores gastos') || q.includes('maiores despesas')) {
+    const totals = {};
+    transactions
+      .filter((t) => t.type === 'expense')
+      .forEach((t) => {
+        totals[t.category] = (totals[t.category] ?? 0) + Math.abs(t.amount);
+      });
+    const top3 = Object.entries(totals)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+    if (top3.length === 0) return 'Ainda não tenho transações suficientes pra te dizer isso.';
+    return `Seus maiores gastos são: ${top3.map(([cat, amt]) => `${cat} (${formatCurrency(amt)})`).join(', ')}.`;
+  }
+
+  if (q.includes('anomalia') || q.includes('gasto estranho') || q.includes('fora do padrão') || q.includes('fora do padrao')) {
+    const anomalies = categoryAnomalies(transactions);
+    if (anomalies.length === 0) return 'Nada fora do seu padrão este mês — seus gastos estão dentro do esperado por categoria.';
+    return anomalies
+      .map((a) => `${a.category} está ${a.percentAbove}% acima da sua média (${formatCurrency(a.currentAmount)} vs ${formatCurrency(a.averageAmount)} de costume)`)
+      .join('. ') + '. Vale a pena verificar.';
+  }
+
   if (q.includes('quanto preciso guardar') || q.includes('quanto guardar') || q.includes('quanto tenho que guardar')) {
     const goal = goals[0];
     if (!goal) return 'Você ainda não tem metas ativas. Que tal criar uma?';
@@ -108,9 +131,15 @@ function localFallback(message, context) {
   }
 
   if (q.includes('assinatura')) {
-    if (subscriptions.length === 0) return 'Você não tem assinaturas cadastradas ainda.';
+    const pending = recurringPatterns.length;
+    if (subscriptions.length === 0) {
+      return pending > 0
+        ? `Você não tem assinaturas cadastradas, mas detectei ${pending} cobrança${pending === 1 ? '' : 's'} recorrente${pending === 1 ? '' : 's'} nas suas transações — dá uma olhada em Assinaturas pra confirmar.`
+        : 'Você não tem assinaturas cadastradas ainda.';
+    }
     const total = subscriptions.reduce((s, x) => s + x.amount, 0);
-    return `Suas assinaturas somam ${formatCurrency(total)} por mês (${formatCurrency(total * 12)} no ano). Vale conferir se todas ainda valem a pena.`;
+    const suffix = pending > 0 ? ` Também detectei ${pending} possível${pending === 1 ? '' : 'is'} assinatura${pending === 1 ? '' : 's'} nova${pending === 1 ? '' : 's'} nas suas transações, esperando sua confirmação.` : '';
+    return `Suas assinaturas somam ${formatCurrency(total)} por mês (${formatCurrency(total * 12)} no ano). Vale conferir se todas ainda valem a pena.${suffix}`;
   }
 
   if (q.includes('resumo') || q.includes('como estou') || q.includes('situação') || q.includes('situacao')) {
@@ -126,6 +155,22 @@ function localFallback(message, context) {
       'Revisar a maior categoria de gasto uma vez por semana costuma render mais economia do que cortar tudo de uma vez.',
       'Guardar uma parte da renda assim que ela cai (antes de gastar) funciona melhor do que tentar guardar o que sobra no fim do mês.',
     ]);
+  }
+
+  // Checked last, after every specific keyword branch above, since this
+  // pattern ("gasto com X") is broad enough to otherwise swallow phrases
+  // that belong to fatura/assinatura/economia — those get first pick.
+  const merchantMatch = q.match(/gast[ao](?:s)? (?:com|no|na|em|de) ([a-zà-ÿ0-9 ]{2,30})/);
+  if (merchantMatch) {
+    const keyword = merchantMatch[1].trim();
+    const matches = transactions.filter(
+      (t) => t.type === 'expense' && t.description?.toLowerCase().includes(keyword)
+    );
+    if (matches.length === 0) {
+      return `Não encontrei transações com "${keyword}" nos seus dados.`;
+    }
+    const total = matches.reduce((s, t) => s + Math.abs(t.amount), 0);
+    return `Você gastou ${formatCurrency(total)} com "${keyword}" (${matches.length} transaç${matches.length === 1 ? 'ão' : 'ões'}).`;
   }
 
   return pick([

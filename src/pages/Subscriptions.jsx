@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Sparkles } from 'lucide-react';
 import clsx from 'clsx';
 import Panel from '../components/Panel';
 import Button from '../components/Button';
@@ -7,8 +7,18 @@ import StatNumber from '../components/StatNumber';
 import { useData } from '../contexts/DataContext';
 import { formatCurrency } from '../utils/format';
 
+const FREQUENCY_LABEL = { weekly: 'semanal', monthly: 'mensal', yearly: 'anual' };
+
 export default function Subscriptions() {
-  const { subscriptions, addSubscription, removeSubscription } = useData();
+  const {
+    subscriptions,
+    addSubscription,
+    removeSubscription,
+    recurringPatterns = [],
+    acceptRecurringPattern,
+    dismissRecurringPattern,
+  } = useData();
+  const suggestions = recurringPatterns.filter((p) => p.status === 'suggested');
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
@@ -38,6 +48,30 @@ export default function Subscriptions() {
         <StatNumber label="Total mensal" value={formatCurrency(totalMonthly)} size="md" />
         <StatNumber label="Total anual" value={formatCurrency(totalMonthly * 12)} size="md" />
       </Panel>
+
+      {suggestions.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-medium text-[var(--color-text-dim)]">Detectadas automaticamente</h2>
+          {suggestions.map((p) => (
+            <Panel key={p.id} className="shimmer-border !p-4 flex items-center gap-3">
+              <Sparkles size={18} className="shrink-0 text-[var(--color-accent)]" />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{p.description}</p>
+                <p className="text-sm text-[var(--color-text-dim)]">
+                  {formatCurrency(p.avgAmount)} · cobrança {FREQUENCY_LABEL[p.frequency] ?? p.frequency} · provavelmente recorrente
+                  ({Math.round(p.confidence * 100)}%)
+                </p>
+              </div>
+              <div className="shrink-0 flex gap-2">
+                <Button variant="ghost" onClick={() => dismissRecurringPattern(p.id)}>
+                  Ignorar
+                </Button>
+                <Button onClick={() => acceptRecurringPattern(p.id)}>Aceitar</Button>
+              </div>
+            </Panel>
+          ))}
+        </div>
+      )}
 
       <div className="space-y-2">
         {subscriptions.map((s) => {

@@ -21,11 +21,26 @@ Use os dados financeiros fornecidos no contexto para embasar a resposta. Nunca i
 export async function generateCopilotReply({ message, context }) {
   const anthropic = getClient();
 
+  const recentTransactions = (context?.transactions ?? [])
+    .slice(0, 20)
+    .map((t) => `${t.date?.slice(0, 10)} ${t.description} (${t.category}): ${t.amount}`)
+    .join('; ');
+  const cardsSummary = (context?.cards ?? [])
+    .map((c) => `${c.name} (fatura atual: ${c.currentInvoice})`)
+    .join(', ');
+  const subscriptionsSummary = (context?.subscriptions ?? [])
+    .map((s) => `${s.name} (${s.amount}/mês)`)
+    .join(', ');
+
   const contextSummary = `Contexto financeiro do usuário:
 - Dinheiro disponível até o próximo salário: ${context?.available ?? 'desconhecido'}
 - Renda mensal: ${context?.monthlyIncome ?? 'desconhecida'}
+- Gastos do mês: ${context?.monthExpenses ?? 'desconhecidos'}
 - Orçamento diário: ${context?.dailyBudget ?? 'desconhecido'}
-- Metas ativas: ${(context?.goals ?? []).map((g) => `${g.name} (${g.saved}/${g.target})`).join(', ') || 'nenhuma'}`;
+- Metas ativas: ${(context?.goals ?? []).map((g) => `${g.name} (${g.saved}/${g.target})`).join(', ') || 'nenhuma'}
+- Cartões: ${cardsSummary || 'nenhum'}
+- Assinaturas: ${subscriptionsSummary || 'nenhuma'}
+- Transações recentes: ${recentTransactions || 'nenhuma'}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-opus-5',

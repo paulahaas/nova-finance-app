@@ -14,13 +14,14 @@ const SUGGESTIONS = [
   'Quanto preciso guardar?',
   'Quando atingirei minha meta?',
   'Como estão minhas faturas?',
+  'Quais são meus maiores gastos?',
   'Me dá um resumo do mês',
   'Me dá uma dica de economia',
 ];
 
 export default function Copilot() {
   const { user, updateUser } = useAuth();
-  const { computed, goals, transactions, cards, subscriptions } = useData();
+  const { computed, goals, transactions, cards, subscriptions, recurringPatterns = [] } = useData();
   const [messages, setMessages] = useState([
     { role: 'assistant', text: 'Olá! Sou o Copilot da NOVA, seu assistente financeiro pessoal. Pergunte qualquer coisa sobre seu dinheiro.' },
   ]);
@@ -53,6 +54,7 @@ export default function Copilot() {
         transactions,
         cards,
         subscriptions,
+        recurringPatterns: recurringPatterns.filter((p) => p.status === 'suggested'),
       },
     });
     setMessages((m) => [...m, { role: 'assistant', text: reply }]);

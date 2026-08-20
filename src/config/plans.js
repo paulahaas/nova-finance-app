@@ -28,6 +28,8 @@ export const PLANS = {
       advancedInsights: false,
       unlimitedHistory: false,
       exportData: false,
+      importsPerMonth: 3,
+      advancedImports: false, // gates the tier-2 classifier + recurring/anomaly detection
     },
   },
   [PLAN_IDS.PRO]: {
@@ -43,6 +45,8 @@ export const PLANS = {
       advancedInsights: true,
       unlimitedHistory: true,
       exportData: true,
+      importsPerMonth: UNLIMITED,
+      advancedImports: true,
     },
   },
 };

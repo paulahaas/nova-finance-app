@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Lightbulb, CreditCard, Repeat, User, Settings as SettingsIcon, Crown, BarChart3, ChevronRight, MessageCircle } from 'lucide-react';
+import { Lightbulb, CreditCard, Repeat, User, Settings as SettingsIcon, Crown, BarChart3, ChevronRight, MessageCircle, Upload } from 'lucide-react';
 import Panel from '../components/Panel';
 import { useAuth } from '../contexts/AuthContext';
 import { getPlan } from '../config/plans';
@@ -9,6 +9,7 @@ const ITEMS = [
   { to: '/app/reports', label: 'Análises', icon: BarChart3 },
   { to: '/app/cards', label: 'Cartões', icon: CreditCard },
   { to: '/app/subscriptions', label: 'Assinaturas', icon: Repeat },
+  { to: '/app/imports', label: 'Importar extrato', icon: Upload },
   { to: '/app/profile', label: 'Perfil', icon: User },
   { to: '/app/settings', label: 'Configurações', icon: SettingsIcon },
   { to: '/app/help', label: 'Ajuda', icon: MessageCircle },

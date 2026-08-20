@@ -2,19 +2,40 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import Panel from '../../components/Panel';
+import StatNumber from '../../components/StatNumber';
 import UpgradeSheet from '../../components/UpgradeSheet';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
-import { canUseAdvancedReports } from '../../config/permissions';
+import { canUseAdvancedReports, canUseAdvancedInsights } from '../../config/permissions';
 import { formatCurrency, formatCompact } from '../../utils/format';
+import { financialScore, totalSubscriptions } from '../../services/financeService';
+import { categoryAnomalies } from '../../services/insightsService';
 
 const COLORS = ['#6b64d6', '#f5b942', '#34d399', '#a3a3a3', '#2c2a63', '#6b6b6b'];
 
 export default function Reports() {
   const { user } = useAuth();
-  const { transactions, goals } = useData();
+  const { transactions, goals, subscriptions, computed } = useData();
   const [showUpgrade, setShowUpgrade] = useState(false);
   const advanced = canUseAdvancedReports(user);
+  const advancedInsights = canUseAdvancedInsights(user);
+
+  const anomalies = useMemo(() => categoryAnomalies(transactions), [transactions]);
+
+  const score = useMemo(() => {
+    const now = new Date();
+    const goalsOnTrackRatio =
+      goals.length === 0
+        ? 1
+        : goals.filter((g) => new Date(g.deadline) >= now || g.saved >= g.target).length / goals.length;
+    return financialScore({
+      monthIncome: computed.monthIncome,
+      monthExpenses: computed.monthExpenses,
+      subscriptionsTotal: totalSubscriptions(subscriptions),
+      anomalyCount: anomalies.length,
+      goalsOnTrackRatio,
+    });
+  }, [computed, subscriptions, anomalies, goals]);
 
   const byCategory = useMemo(() => {
     const map = {};
@@ -37,6 +58,41 @@ export default function Reports() {
           Ver previsão →
         </Link>
       </div>
+
+      {advancedInsights ? (
+        <Panel>
+          <div className="flex items-center justify-between gap-4">
+            <StatNumber
+              label="Financial Score"
+              value={score.score}
+              sub={score.label}
+              tone={score.tone === 'good' ? 'positive' : score.tone === 'alert' ? 'negative' : 'default'}
+              size="md"
+            />
+          </div>
+          {anomalies.length > 0 && (
+            <div className="mt-5 pt-4 border-t border-[var(--color-border)] space-y-2">
+              <p className="text-sm font-medium">Fora do seu padrão este mês</p>
+              {anomalies.map((a) => (
+                <p key={a.category} className="text-sm text-[var(--color-text-dim)]">
+                  <span className="text-[var(--color-text)]">{a.category}</span> está{' '}
+                  <span className="text-[var(--color-warning)]">{a.percentAbove}% acima</span> da sua média — vale a
+                  pena verificar.
+                </p>
+              ))}
+            </div>
+          )}
+        </Panel>
+      ) : (
+        <Panel className="text-center">
+          <p className="text-sm text-[var(--color-text-dim)] mb-3">
+            Financial Score e detecção de gastos fora do padrão fazem parte dos insights avançados.
+          </p>
+          <button onClick={() => setShowUpgrade(true)} className="text-sm text-[var(--color-accent)] hover:underline">
+            Desbloquear com o NOVA Pro →
+          </button>
+        </Panel>
+      )}
 
       <Panel>
         <p className="font-medium mb-4">Gastos por categoria</p>

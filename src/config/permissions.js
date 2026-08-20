@@ -2,7 +2,7 @@
 // canUseFeature() (or one of the named helpers below) so new plans can be
 // added later without touching feature code.
 
-import { getPlan, UNLIMITED } from './plans';
+import { getPlan, UNLIMITED } from './plans.js';
 
 const FEATURES = {
   ADD_BANK: 'ADD_BANK',
@@ -13,6 +13,8 @@ const FEATURES = {
   ADVANCED_INSIGHTS: 'ADVANCED_INSIGHTS',
   UNLIMITED_HISTORY: 'UNLIMITED_HISTORY',
   EXPORT_DATA: 'EXPORT_DATA',
+  IMPORT_STATEMENT: 'IMPORT_STATEMENT',
+  ADVANCED_IMPORTS: 'ADVANCED_IMPORTS',
 };
 
 export { FEATURES };
@@ -44,6 +46,10 @@ export function canUseFeature(user, feature, usage = {}) {
       return { allowed: !!limits.unlimitedHistory };
     case FEATURES.EXPORT_DATA:
       return { allowed: !!limits.exportData };
+    case FEATURES.IMPORT_STATEMENT:
+      return withCount(limits.importsPerMonth, usage.importsThisMonth ?? 0);
+    case FEATURES.ADVANCED_IMPORTS:
+      return { allowed: !!limits.advancedImports };
     default:
       return { allowed: false };
   }
@@ -64,3 +70,6 @@ export const canUseAdvancedReports = (user) => canUseFeature(user, FEATURES.ADVA
 export const canUseAdvancedInsights = (user) => canUseFeature(user, FEATURES.ADVANCED_INSIGHTS).allowed;
 export const canExportData = (user) => canUseFeature(user, FEATURES.EXPORT_DATA).allowed;
 export const hasUnlimitedHistory = (user) => canUseFeature(user, FEATURES.UNLIMITED_HISTORY).allowed;
+export const canImportStatement = (user, importsThisMonth) =>
+  canUseFeature(user, FEATURES.IMPORT_STATEMENT, { importsThisMonth });
+export const canUseAdvancedImports = (user) => canUseFeature(user, FEATURES.ADVANCED_IMPORTS).allowed;

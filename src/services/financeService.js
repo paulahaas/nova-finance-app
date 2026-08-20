@@ -140,3 +140,46 @@ export function forecastBalance({ currentBalance, avgMonthlyIncome, avgMonthlyEx
   }
   return points;
 }
+
+/**
+ * A single 0-100 "Financial Score" (spec section 18) combining savings
+ * rate, how much of income goes to recurring commitments, goal progress,
+ * and any open spending anomalies. Weighted, not scientific — meant to be
+ * a fast at-a-glance signal, same spirit as pulseStatus() above.
+ */
+export function financialScore({
+  monthIncome,
+  monthExpenses,
+  subscriptionsTotal = 0,
+  anomalyCount = 0,
+  goalsOnTrackRatio = 1,
+}) {
+  const savingsRate = monthIncome > 0 ? (monthIncome - monthExpenses) / monthIncome : 0;
+  const savingsScore = clamp01(savingsRate / 0.2); // saving 20%+ of income = full marks
+
+  const subscriptionBurden = monthIncome > 0 ? subscriptionsTotal / monthIncome : 0;
+  const subscriptionScore = clamp01(1 - subscriptionBurden / 0.3); // >30% of income on subs = 0
+
+  const anomalyScore = clamp01(1 - anomalyCount / 3);
+
+  const weighted =
+    savingsScore * 0.45 + subscriptionScore * 0.2 + clamp01(goalsOnTrackRatio) * 0.2 + anomalyScore * 0.15;
+
+  const score = Math.round(weighted * 100);
+
+  let label = 'Precisa de atenção';
+  let tone = 'alert';
+  if (score >= 75) {
+    label = 'Saudável';
+    tone = 'good';
+  } else if (score >= 45) {
+    label = 'Estável';
+    tone = 'caution';
+  }
+
+  return { score, label, tone };
+}
+
+function clamp01(n) {
+  return Math.max(0, Math.min(1, n));
+}

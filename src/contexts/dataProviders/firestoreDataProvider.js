@@ -57,6 +57,9 @@ export function useFirestoreDataProvider(uid, user) {
   const [transactions, addTransactionDoc] = useUserCollection(uid, 'transactions');
   const [goals, addGoalDoc, updateGoalDoc] = useUserCollection(uid, 'goals');
   const [subscriptions, addSubscriptionDoc, , removeSubscriptionDoc] = useUserCollection(uid, 'subscriptions');
+  const [userCategoryRules] = useUserCollection(uid, 'userCategoryRules');
+  const [importBatches] = useUserCollection(uid, 'importBatches');
+  const [recurringPatterns, , updateRecurringPatternDoc] = useUserCollection(uid, 'recurringPatterns');
 
   const categories = useMemo(() => buildDemoCategories(), []);
   const alerts = []; // real alert generation is a future backend job — see README roadmap
@@ -89,6 +92,23 @@ export function useFirestoreDataProvider(uid, user) {
     return removeSubscriptionDoc(id);
   }
 
+  // A detected recurring pattern only becomes a real subscription once the
+  // user explicitly accepts it — mirrors the app's general "preview, never
+  // auto-commit" rule for anything derived from statement import.
+  function acceptRecurringPattern(patternId) {
+    const pattern = recurringPatterns.find((p) => p.id === patternId);
+    if (!pattern) return Promise.resolve();
+    return addSubscriptionDoc({
+      name: pattern.description,
+      amount: pattern.avgAmount,
+      cycle: pattern.frequency === 'yearly' ? 'yearly' : 'monthly',
+      category: pattern.category,
+    }).then(() => updateRecurringPatternDoc(patternId, { status: 'accepted' }));
+  }
+  function dismissRecurringPattern(patternId) {
+    return updateRecurringPatternDoc(patternId, { status: 'dismissed' });
+  }
+
   const computed = useMemo(() => {
     const available = availableMoney({ accounts, cards, subscriptions, goals });
     const payDay = user?.payDay ?? 5;
@@ -110,6 +130,9 @@ export function useFirestoreDataProvider(uid, user) {
     transactions,
     goals,
     subscriptions,
+    userCategoryRules,
+    importBatches,
+    recurringPatterns,
     alerts,
     achievements,
     computed,
@@ -121,6 +144,8 @@ export function useFirestoreDataProvider(uid, user) {
     contributeToGoal,
     addSubscription,
     removeSubscription,
+    acceptRecurringPattern,
+    dismissRecurringPattern,
     setCategories: () => {}, // categories aren't user-editable yet (section 19: "futuramente")
   };
 }

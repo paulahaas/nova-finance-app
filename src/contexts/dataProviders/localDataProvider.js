@@ -18,6 +18,7 @@ import {
   monthExpenses,
   monthIncome,
 } from '../../services/financeService';
+import { transactionDedupeKey, hashString } from '../../services/statement/hash.js';
 
 export function useLocalDataProvider(user) {
   ensureSeeded();
@@ -29,6 +30,9 @@ export function useLocalDataProvider(user) {
   const [transactions, setTransactions] = useState(() => readCollection('transactions'));
   const [goals, setGoals] = useState(() => readCollection('goals'));
   const [subscriptions, setSubscriptions] = useState(() => readCollection('subscriptions'));
+  const [userCategoryRules, setUserCategoryRules] = useState(() => readCollection('userCategoryRules'));
+  const [importBatches, setImportBatches] = useState(() => readCollection('importBatches'));
+  const [recurringPatterns, setRecurringPatterns] = useState(() => readCollection('recurringPatterns'));
   const [alerts] = useState(() => readCollection('alerts'));
   const [achievements] = useState(() => readCollection('achievements'));
 
@@ -48,6 +52,9 @@ export function useLocalDataProvider(user) {
   const setAndPersistTransactions = persist(setTransactions, 'transactions');
   const setAndPersistGoals = persist(setGoals, 'goals');
   const setAndPersistSubscriptions = persist(setSubscriptions, 'subscriptions');
+  const setAndPersistUserCategoryRules = persist(setUserCategoryRules, 'userCategoryRules');
+  const setAndPersistImportBatches = persist(setImportBatches, 'importBatches');
+  const setAndPersistRecurringPatterns = persist(setRecurringPatterns, 'recurringPatterns');
 
   function addBank(bank) {
     setAndPersistBanks((prev) => [...prev, { id: `bank-${Date.now()}`, createdAt: new Date().toISOString(), ...bank }]);
@@ -81,6 +88,66 @@ export function useLocalDataProvider(user) {
     setAndPersistSubscriptions((prev) => prev.filter((s) => s.id !== id));
   }
 
+  // Bulk-write path used by statementImportService.js's local/demo branch —
+  // mirrors what server/services/statement/importService.js does with the
+  // Admin SDK, but against localStorage. Deterministic IDs (same dedupe key
+  // as the server) make re-confirming a batch idempotent here too.
+  function addTransactionsBulk(rows) {
+    setAndPersistTransactions((prev) => {
+      const byId = new Map(prev.map((t) => [t.id, t]));
+      rows.forEach((row) => {
+        const id = `stmt_${transactionDedupeKey(row)}`;
+        byId.set(id, { id, createdAt: new Date().toISOString(), ...row });
+      });
+      return [...byId.values()].sort((a, b) => new Date(b.date) - new Date(a.date));
+    });
+  }
+
+  function addImportBatch(batch) {
+    const id = batch.id || `batch-${Date.now()}`;
+    setAndPersistImportBatches((prev) => {
+      const others = prev.filter((b) => b.id !== id);
+      return [{ id, ...batch }, ...others];
+    });
+    return id;
+  }
+
+  function addUserCategoryRule(rule) {
+    const id = hashString(rule.pattern);
+    setAndPersistUserCategoryRules((prev) => [...prev.filter((r) => r.id !== id), { id, ...rule }]);
+  }
+
+  // Upserts detected patterns without clobbering ones the user already
+  // accepted/dismissed — same rule as the server's refreshRecurringPatterns.
+  function setRecurringPatternsBulk(patterns) {
+    setAndPersistRecurringPatterns((prev) => {
+      const byId = new Map(prev.map((p) => [p.id, p]));
+      patterns.forEach((pattern) => {
+        const id = pattern.id || `pattern-${pattern.normalizedDescription}-${pattern.bankId ?? ''}`;
+        const existing = byId.get(id);
+        if (existing && existing.status !== 'suggested') return;
+        byId.set(id, { id, status: 'suggested', detectedAt: new Date().toISOString(), ...pattern });
+      });
+      return [...byId.values()];
+    });
+  }
+
+  function acceptRecurringPattern(patternId) {
+    const pattern = recurringPatterns.find((p) => p.id === patternId);
+    if (!pattern) return;
+    addSubscription({
+      name: pattern.description,
+      amount: pattern.avgAmount,
+      cycle: pattern.frequency === 'yearly' ? 'yearly' : 'monthly',
+      category: pattern.category,
+    });
+    setAndPersistRecurringPatterns((prev) => prev.map((p) => (p.id === patternId ? { ...p, status: 'accepted' } : p)));
+  }
+
+  function dismissRecurringPattern(patternId) {
+    setAndPersistRecurringPatterns((prev) => prev.map((p) => (p.id === patternId ? { ...p, status: 'dismissed' } : p)));
+  }
+
   const computed = useMemo(() => {
     const available = availableMoney({ accounts, cards, subscriptions, goals });
     const income = user?.income ?? monthIncome(transactions);
@@ -103,6 +170,9 @@ export function useLocalDataProvider(user) {
     transactions,
     goals,
     subscriptions,
+    userCategoryRules,
+    importBatches,
+    recurringPatterns,
     alerts,
     achievements,
     computed,
@@ -114,6 +184,12 @@ export function useLocalDataProvider(user) {
     contributeToGoal,
     addSubscription,
     removeSubscription,
+    addTransactionsBulk,
+    addImportBatch,
+    addUserCategoryRule,
+    setRecurringPatternsBulk,
+    acceptRecurringPattern,
+    dismissRecurringPattern,
     setCategories,
   };
 }

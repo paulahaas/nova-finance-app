@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { PluggyConnect } from 'react-pluggy-connect';
-import { Landmark } from 'lucide-react';
+import { Landmark, Upload } from 'lucide-react';
 import Panel from '../../components/Panel';
 import Button from '../../components/Button';
 import TiltCard from '../../components/TiltCard';
@@ -127,6 +128,11 @@ export default function Banks() {
           {ofBusy ? 'Conectando...' : 'Conectar banco automaticamente (Open Finance)'}
         </Button>
       )}
+
+      <Button as={Link} to="/app/imports/new" variant="outline" className="w-full flex items-center justify-center gap-2">
+        <Upload size={18} />
+        Importar extrato (CSV/OFX)
+      </Button>
 
       {showAdd ? (
         <Panel>
