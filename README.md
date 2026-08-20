@@ -30,7 +30,9 @@ Cada uma cai pra modo demo se não tiver configurada — nenhuma quebra o app:
 - **Stripe** (assinatura Pro) — `npm run setup:stripe` já cria o produto/preço pra você depois de colocar a secret key
 - **Pluggy** (Open Finance, conexão bancária de verdade) — precisa do Firebase configurado também, já que grava direto no Firestore do usuário
 
-Detalhes de cada variável estão comentados no `.env.example`.
+Detalhes de cada variável estão comentados no `.env.example`. Não é mock só pra mostrar tela: essa versão está de pé com Firebase, Stripe e Pluggy reais, rodando em produção.
+
+Duas decisões que valem mencionar: cartão salva só os últimos 4 dígitos e a validade — número completo e CVV nunca são pedidos, porque isso é rastreio de gasto, não processamento de pagamento, e CVV não deveria ser guardado em lugar nenhum. E os limites de cada plano (Free/Pro) ficam centralizados num arquivo só (`src/config/plans.js`), então mudar um preço ou um limite não vira caça ao tesouro pelo código.
 
 ## Estrutura
 
