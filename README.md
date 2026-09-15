@@ -2,7 +2,12 @@
 
 Seu dinheiro. Sob seu controle.
 
+[![CI](https://github.com/paulahaas/nova-finance-app/actions/workflows/ci.yml/badge.svg)](https://github.com/paulahaas/nova-finance-app/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 App de organização financeira pessoal — contas, cartões, metas, orçamento e um assistente (Copilot) pra perguntas tipo "posso comprar isso?". React + Vite no front, Express no back, Firebase/Stripe/Pluggy quando configurados.
+
+![Dashboard do NOVA](docs/dashboard.png)
 
 ## Rodar
 
