@@ -1,39 +1,21 @@
 // Real auth provider, backed by Firebase Auth + Firestore. Active whenever
-// services/firebase.js reports isFirebaseConfigured. The Firestore
-// `users/{uid}` document is the source of truth for plan/subscription
-// state — the Stripe webhook (server/routes/stripe.js) writes to the same
-// document, and the onSnapshot listener below picks up those changes live,
-// so a successful checkout flips the user to Pro without a page reload.
+// services/firebase.js reports isFirebaseConfigured. NOVA is single-user:
+// there is no sign-up — the one account already exists, and firestore.rules
+// only lets its UID read or write anything.
 
 import { useEffect, useState } from 'react';
 import {
-  createUserWithEmailAndPassword,
+  EmailAuthProvider,
+  deleteUser,
+  reauthenticateWithCredential,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
-  signInWithPopup,
   signOut,
-  updateProfile,
   onAuthStateChanged,
 } from 'firebase/auth';
-import { doc, setDoc, updateDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
-import { auth, db, googleProvider } from '../../services/firebase';
-
-function defaultProfile({ name, email }) {
-  return {
-    name,
-    email,
-    plan: 'free',
-    onboarded: false,
-    income: 0,
-    payDay: 5,
-    hasCard: false,
-    hasDebt: false,
-    goalIntent: null,
-    aiMessagesUsed: 0,
-    xp: 0,
-    level: 1,
-    createdAt: serverTimestamp(),
-  };
-}
+import { collection, deleteDoc, doc, getDocs, onSnapshot, updateDoc, writeBatch } from 'firebase/firestore';
+import { auth, db } from '../../services/firebase';
+import { USER_COLLECTIONS } from '../../config/collections';
 
 export function useFirebaseAuthProvider() {
   const [firebaseUser, setFirebaseUser] = useState(null);
@@ -65,10 +47,16 @@ export function useFirebaseAuthProvider() {
   useEffect(() => {
     if (!firebaseUser || !db) return undefined;
     const ref = doc(db, 'users', firebaseUser.uid);
-    return onSnapshot(ref, (snap) => {
-      if (snap.exists()) setProfile({ id: firebaseUser.uid, ...snap.data() });
-      setProfileReady(true);
-    });
+    return onSnapshot(
+      ref,
+      (snap) => {
+        if (snap.exists()) setProfile({ id: firebaseUser.uid, ...snap.data() });
+        setProfileReady(true);
+      },
+      // Permission denied (any account that isn't the owner): treat as no
+      // profile instead of leaving the app stuck on the loading state.
+      () => setProfileReady(true)
+    );
   }, [firebaseUser]);
 
   // Only report "ready" once both the auth state AND (for a signed-in
@@ -76,28 +64,13 @@ export function useFirebaseAuthProvider() {
   // see a signed-in-but-profile-not-loaded-yet user as logged out.
   const authReady = authStateReady && profileReady;
 
-  async function signup({ name, email, password }) {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(cred.user, { displayName: name });
-    await setDoc(doc(db, 'users', cred.user.uid), defaultProfile({ name, email }));
-    return { id: cred.user.uid, ...defaultProfile({ name, email }) };
-  }
-
   async function login({ email, password }) {
     const cred = await signInWithEmailAndPassword(auth, email, password);
     return cred.user;
   }
 
-  async function loginWithGoogle() {
-    const cred = await signInWithPopup(auth, googleProvider);
-    const ref = doc(db, 'users', cred.user.uid);
-    // First Google sign-in: no profile doc yet, create one.
-    await setDoc(
-      ref,
-      defaultProfile({ name: cred.user.displayName ?? 'Usuário NOVA', email: cred.user.email }),
-      { merge: true }
-    );
-    return cred.user;
+  function resetPassword(email) {
+    return sendPasswordResetEmail(auth, email);
   }
 
   function logout() {
@@ -114,20 +87,37 @@ export function useFirebaseAuthProvider() {
     await updateDoc(doc(db, 'users', firebaseUser.uid), patch);
   }
 
+  // Both go away with the Pro plan in Etapa 2 — kept only so the still
+  // existing /pro and Profile screens don't break in the meantime.
   async function upgradeToPro() {
     if (!firebaseUser) return;
-    await updateDoc(doc(db, 'users', firebaseUser.uid), {
-      plan: 'pro',
-      subscriptionStatus: 'active',
-      subscriptionId: `demo_${Date.now()}`,
-      subscriptionStart: new Date().toISOString(),
-      subscriptionEnd: null,
-    });
+    await updateDoc(doc(db, 'users', firebaseUser.uid), { plan: 'pro', subscriptionStatus: 'active' });
   }
 
   async function downgradeToFree() {
     if (!firebaseUser) return;
     await updateDoc(doc(db, 'users', firebaseUser.uid), { plan: 'free', subscriptionStatus: 'canceled' });
+  }
+
+  // Re-authenticates first so a wrong password fails before anything is
+  // deleted (Firebase would otherwise demand a recent login only after the
+  // data was already gone), then wipes every collection, the profile and
+  // finally the Auth account itself.
+  async function deleteAccount(password) {
+    if (!firebaseUser) return;
+    await reauthenticateWithCredential(firebaseUser, EmailAuthProvider.credential(firebaseUser.email, password));
+
+    const uid = firebaseUser.uid;
+    for (const name of USER_COLLECTIONS) {
+      const snap = await getDocs(collection(db, 'users', uid, name));
+      for (let i = 0; i < snap.docs.length; i += 400) {
+        const batch = writeBatch(db);
+        snap.docs.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+      }
+    }
+    await deleteDoc(doc(db, 'users', uid));
+    await deleteUser(firebaseUser);
   }
 
   function getIdToken() {
@@ -138,14 +128,14 @@ export function useFirebaseAuthProvider() {
     user: profile,
     authReady,
     authMode: 'firebase',
-    signup,
     login,
-    loginWithGoogle,
+    resetPassword,
     logout,
     completeOnboarding,
     updateUser,
     upgradeToPro,
     downgradeToFree,
+    deleteAccount,
     getIdToken,
   };
 }

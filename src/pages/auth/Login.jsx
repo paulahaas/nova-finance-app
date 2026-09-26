@@ -1,20 +1,25 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Button from '../../components/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import { friendlyAuthError } from '../../utils/authErrors';
+
+const inputClass =
+  'rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] px-4 py-3.5 text-base outline-none focus:border-[var(--color-accent)] transition-colors';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const { login, loginWithGoogle, startDemo, authMode } = useAuth();
+  const { login, resetPassword, startDemo, authMode } = useAuth();
   const navigate = useNavigate();
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+    setInfo('');
     setSubmitting(true);
     try {
       await login({ email, password });
@@ -28,12 +33,17 @@ export default function Login() {
     }
   }
 
-  async function handleGoogle() {
+  async function handleReset() {
     setError('');
+    setInfo('');
+    if (!email.trim()) {
+      setError('Digite seu e-mail acima e toque em "Esqueci minha senha" de novo.');
+      return;
+    }
     setSubmitting(true);
     try {
-      await loginWithGoogle();
-      navigate('/app');
+      await resetPassword(email.trim());
+      setInfo('Se esse e-mail tiver uma conta, enviamos um link pra você criar uma nova senha. Olhe também o spam.');
     } catch (err) {
       setError(friendlyAuthError(err));
     } finally {
@@ -55,42 +65,47 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col justify-center px-8 max-w-sm mx-auto">
-      <h1 className="text-2xl font-semibold mb-8">Entrar</h1>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <div className="min-h-screen flex flex-col justify-center px-8 pt-safe pb-safe max-w-sm mx-auto">
+      <div className="mb-10 animate-fade-in-up">
+        <h1 className="text-5xl font-semibold tracking-tight">
+          NOVA<span className="text-[var(--color-accent)]">.</span>
+        </h1>
+        <p className="mt-3 text-[var(--color-text-dim)]">Seu dinheiro. Sob seu controle.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
         <input
           type="email"
           required
+          autoComplete="username"
           placeholder="E-mail"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)]"
+          className={inputClass}
         />
         <input
           type="password"
           required
+          autoComplete="current-password"
           placeholder="Senha"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)]"
+          className={inputClass}
         />
         {error && <p className="text-sm text-[var(--color-negative)]">{error}</p>}
-        <Button type="submit" disabled={submitting}>
-          Entrar
+        {info && <p className="text-sm text-[var(--color-positive)]">{info}</p>}
+        <Button type="submit" disabled={submitting} className="min-h-[48px]">
+          {submitting ? 'Entrando...' : 'Entrar'}
         </Button>
-        <Button type="button" variant="secondary" onClick={handleGoogle} disabled={submitting}>
-          Continuar com Google
-        </Button>
-        <Link to="#" className="text-sm text-center text-[var(--color-text-dim)] hover:text-[var(--color-text)]">
+        <button
+          type="button"
+          onClick={handleReset}
+          disabled={submitting}
+          className="min-h-[44px] text-sm text-center text-[var(--color-text-dim)] hover:text-[var(--color-text)] transition-colors"
+        >
           Esqueci minha senha
-        </Link>
+        </button>
       </form>
-      <p className="text-sm text-center text-[var(--color-text-dim)] mt-8">
-        Não tem conta?{' '}
-        <Link to="/signup" className="text-[var(--color-accent)]">
-          Criar conta
-        </Link>
-      </p>
 
       {authMode === 'demo' && (
         <button

@@ -1,7 +1,7 @@
 // Client for the Open Finance endpoints (server/routes/openFinance.js).
 // Requires a signed-in Firebase user, same as paymentService.js.
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+import { API_URL } from '../config/api';
 
 export async function getGatewayStatus() {
   try {

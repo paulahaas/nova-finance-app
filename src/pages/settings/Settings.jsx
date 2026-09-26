@@ -6,7 +6,7 @@ import UpgradeSheet from '../../components/UpgradeSheet';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { canExportData } from '../../config/permissions';
-import { clearAll } from '../../services/storageService';
+import { friendlyAuthError } from '../../utils/authErrors';
 
 const SECTIONS = [
   'Notificações',
@@ -21,9 +21,13 @@ const SECTIONS = [
 ];
 
 export default function Settings() {
-  const { user, logout } = useAuth();
+  const { user, logout, deleteAccount } = useAuth();
   const data = useData();
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
   const exportAllowed = canExportData(user);
 
@@ -50,11 +54,17 @@ export default function Settings() {
     URL.revokeObjectURL(url);
   }
 
-  function handleDeleteAccount() {
-    if (!confirm('Isso apagará todos os seus dados locais do NOVA. Deseja continuar?')) return;
-    clearAll();
-    logout();
-    navigate('/welcome');
+  async function handleDeleteAccount(e) {
+    e.preventDefault();
+    setDeleteError('');
+    setDeleting(true);
+    try {
+      await deleteAccount(deletePassword);
+      navigate('/login', { replace: true });
+    } catch (err) {
+      setDeleteError(friendlyAuthError(err));
+      setDeleting(false);
+    }
   }
 
   return (
@@ -85,15 +95,51 @@ export default function Settings() {
       </Panel>
 
       <Panel>
-        <button
-          onClick={handleDeleteAccount}
-          className="w-full text-sm text-[var(--color-negative)] text-left"
-        >
-          Excluir conta
-        </button>
+        {confirmingDelete ? (
+          <form onSubmit={handleDeleteAccount} className="flex flex-col gap-3">
+            <p className="text-sm text-[var(--color-text-dim)]">
+              Isso apaga <strong className="text-[var(--color-text)]">para sempre</strong> todos os seus dados
+              (transações, cartões, metas...) e a sua conta. Não dá pra desfazer. Digite sua senha para confirmar.
+            </p>
+            <input
+              type="password"
+              required
+              autoComplete="current-password"
+              placeholder="Senha"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              className="rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)] px-4 py-3 text-base outline-none focus:border-[var(--color-negative)]"
+            />
+            {deleteError && <p className="text-sm text-[var(--color-negative)]">{deleteError}</p>}
+            <div className="flex gap-3">
+              <Button type="submit" disabled={deleting} className="!bg-[var(--color-negative)] hover:!bg-[var(--color-negative)]">
+                {deleting ? 'Apagando...' : 'Apagar tudo'}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={deleting}
+                onClick={() => {
+                  setConfirmingDelete(false);
+                  setDeletePassword('');
+                  setDeleteError('');
+                }}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <button
+            onClick={() => setConfirmingDelete(true)}
+            className="w-full min-h-[44px] text-sm text-[var(--color-negative)] text-left"
+          >
+            Excluir conta
+          </button>
+        )}
       </Panel>
 
-      <Button variant="ghost" className="w-full" onClick={() => { logout(); navigate('/welcome'); }}>
+      <Button variant="ghost" className="w-full" onClick={() => { logout(); navigate('/login'); }}>
         Sair
       </Button>
 

@@ -10,7 +10,7 @@ import { evaluatePurchase, monthlyGoalContribution } from './financeService';
 import { topExpenseCategory, categoryAnomalies } from './insightsService';
 import { formatCurrency } from '../utils/format';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+import { API_URL } from '../config/api';
 
 const GREETINGS = ['oi', 'ola', 'olá', 'bom dia', 'boa tarde', 'boa noite', 'eae', 'e ai', 'e aí'];
 

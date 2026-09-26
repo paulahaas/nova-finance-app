@@ -1,25 +1,22 @@
 rules_version = '2';
 
-// Every document lives under users/{uid}/... A user can only ever read or
-// write their own subtree — this is the enforcement of section 42
-// ("usuários só podem acessar seus próprios dados") on the database side,
-// not just in the client code.
+// NOVA is a single-user app: every document lives under users/{uid}/... and
+// only the owner's UID (same value as src/config/owner.js) can touch them.
+// Even if someone creates a Firebase Auth account through the API, these
+// rules give them access to nothing.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{uid} {
-      allow read, update: if request.auth != null && request.auth.uid == uid;
-      // Profile creation happens client-side right after signup (see
-      // contexts/authProviders/firebaseAuthProvider.js) — allow create for
-      // the signed-in user's own doc, but never allow a client to set
-      // itself to plan: "pro" directly (that only happens via the Stripe
-      // webhook, which uses the Admin SDK and bypasses these rules).
-      allow create: if request.auth != null
+    function isOwner(uid) {
+      return request.auth != null
         && request.auth.uid == uid
-        && request.resource.data.plan == 'free';
-      allow delete: if false;
+        && uid == 'cBGW1AYLG8X1eGD1mBAdWILUnnI2';
+    }
+
+    match /users/{uid} {
+      allow read, create, update, delete: if isOwner(uid);
 
       match /{collection}/{docId} {
-        allow read, write: if request.auth != null && request.auth.uid == uid;
+        allow read, write: if isOwner(uid);
       }
     }
   }

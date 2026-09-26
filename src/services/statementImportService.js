@@ -15,7 +15,7 @@ import { categorize, UNCATEGORIZED } from './statement/categorizer.js';
 import { flagDuplicates } from './statement/duplicateDetector.js';
 import { detectRecurring } from './recurringService.js';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+import { API_URL } from '../config/api';
 
 function detectFormat(filename) {
   return filename.toLowerCase().endsWith('.ofx') ? 'ofx' : 'csv';

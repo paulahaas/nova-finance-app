@@ -23,7 +23,7 @@ export default function Profile() {
 
   function handleLogout() {
     logout();
-    navigate('/welcome');
+    navigate('/login');
   }
 
   async function handleManageSubscription() {

@@ -1,12 +1,10 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import RequireAuth from './components/RequireAuth';
 import AppLayout from './layouts/AppLayout';
 
 import Splash from './pages/Splash';
-import Welcome from './pages/Welcome';
 import Login from './pages/auth/Login';
-import Signup from './pages/auth/Signup';
 import Onboarding from './pages/onboarding/Onboarding';
 
 import Dashboard from './pages/Dashboard';
@@ -38,9 +36,11 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<Splash />} />
-          <Route path="/welcome" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+          {/* Single-user app: no public sign-up, and the old marketing entry
+              points just lead to the login. */}
+          <Route path="/welcome" element={<Navigate to="/login" replace />} />
+          <Route path="/signup" element={<Navigate to="/login" replace />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/pro" element={<ProPlan />} />
 

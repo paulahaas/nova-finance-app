@@ -11,7 +11,7 @@
 // startDemo() action (see pages/auth/Login.jsx "Ver modo demonstração").
 
 import { useEffect, useState } from 'react';
-import { readDoc, writeDoc } from '../../services/storageService';
+import { readDoc, writeDoc, clearAll } from '../../services/storageService';
 import { buildDemoUser } from '../../data/demoData';
 import { seedDemoAccount, seedEmptyAccount } from '../../services/seedService';
 
@@ -90,6 +90,15 @@ export function useLocalAuthProvider() {
     setUser(null);
   }
 
+  async function resetPassword() {
+    throw new Error('Recuperação de senha só existe com o Firebase configurado.');
+  }
+
+  async function deleteAccount() {
+    clearAll();
+    setUser(null);
+  }
+
   function completeOnboarding(onboardingData) {
     setUser((prev) => ({ ...prev, ...onboardingData, onboarded: true }));
   }
@@ -122,6 +131,8 @@ export function useLocalAuthProvider() {
     loginWithGoogle,
     startDemo,
     logout,
+    resetPassword,
+    deleteAccount,
     completeOnboarding,
     updateUser,
     upgradeToPro,

@@ -1,13 +1,18 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Splash() {
   const navigate = useNavigate();
+  const { user, authReady } = useAuth();
 
+  // Short brand moment, then straight to the app (or the login if signed
+  // out) — waiting for authReady so a signed-in refresh never flashes /login.
   useEffect(() => {
-    const t = setTimeout(() => navigate('/welcome'), 1800);
+    if (!authReady) return undefined;
+    const t = setTimeout(() => navigate(user ? '/app' : '/login', { replace: true }), 900);
     return () => clearTimeout(t);
-  }, [navigate]);
+  }, [authReady, user, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--color-bg)]">

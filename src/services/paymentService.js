@@ -2,7 +2,7 @@
 // Requires a signed-in Firebase user — every call attaches the user's ID
 // token so the backend can verify identity before touching Stripe/Firestore.
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+import { API_URL } from '../config/api';
 
 export async function getGatewayStatus() {
   try {
