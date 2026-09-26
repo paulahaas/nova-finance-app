@@ -5,10 +5,7 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 import SelectMenu from '../../components/SelectMenu';
 import ProgressBar from '../../components/ProgressBar';
-import UpgradeSheet from '../../components/UpgradeSheet';
-import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
-import { canAddCard } from '../../config/permissions';
 import { formatCurrency } from '../../utils/format';
 
 const TYPE_LABEL = { credit: 'Crédito', debit: 'Débito', both: 'Crédito e débito' };
@@ -19,21 +16,9 @@ const TYPE_OPTIONS = [
 ];
 
 export default function Cards() {
-  const { user } = useAuth();
   const { cards, banks, addCard } = useData();
-  const [showUpgrade, setShowUpgrade] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: '', bankId: '', type: 'credit', limit: '', dueDay: '', last4: '', expiry: '' });
-
-  const permission = canAddCard(user, cards.length);
-
-  function handleAddClick() {
-    if (!permission.allowed) {
-      setShowUpgrade(true);
-      return;
-    }
-    setShowAdd(true);
-  }
 
   function handleCreate(e) {
     e.preventDefault();
@@ -155,17 +140,9 @@ export default function Cards() {
           </form>
         </Panel>
       ) : (
-        <Button variant="outline" className="w-full" onClick={handleAddClick}>
+        <Button variant="outline" className="w-full" onClick={() => setShowAdd(true)}>
           + Adicionar cartão
         </Button>
-      )}
-
-      {showUpgrade && (
-        <UpgradeSheet
-          title="Limite de cartões atingido"
-          description="No plano Free você pode ter até 3 cartões. Faça upgrade para o NOVA Pro e tenha cartões ilimitados."
-          onClose={() => setShowUpgrade(false)}
-        />
       )}
     </div>
   );

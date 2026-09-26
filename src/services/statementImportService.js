@@ -1,25 +1,8 @@
-// Client-side entry point for the import flow. When Firebase is configured
-// it just calls the Express API (server/services/statement/importService.js
-// does the real work there). In local/demo mode there is no server to call
-// (requireAuth would reject it anyway — there's no real Firebase ID token),
-// so this runs the exact same pure parsing/categorization/detection modules
-// directly in the browser and writes through the local data provider's bulk
-// methods instead. Either way the UI (ImportStatement.jsx) calls the same
-// three functions below and doesn't need to know which mode it's in.
-import { isFirebaseConfigured } from './firebase';
-import { canImportStatement, canUseAdvancedImports } from '../config/permissions';
-import { parseCsv, mapCsvRows } from './statement/csvParser.js';
-import { parseOfx } from './statement/ofxParser.js';
-import { normalizeTransactionRow, normalizeDescription } from './statement/normalizer.js';
-import { categorize, UNCATEGORIZED } from './statement/categorizer.js';
-import { flagDuplicates } from './statement/duplicateDetector.js';
-import { detectRecurring } from './recurringService.js';
-
+// Client for the statement-import API (server/routes/statements.js): the
+// file is read in the browser, then parsed, categorized and (on confirm)
+// written to Firestore by the server — see
+// server/services/statement/importService.js.
 import { API_URL } from '../config/api';
-
-function detectFormat(filename) {
-  return filename.toLowerCase().endsWith('.ofx') ? 'ofx' : 'csv';
-}
 
 function readWithEncoding(file, encoding) {
   return new Promise((resolve, reject) => {
@@ -39,7 +22,7 @@ export async function readStatementFile(file) {
   return { filename: file.name, content };
 }
 
-async function authedFetch(getIdToken, path, body) {
+async function authedPost(getIdToken, path, body) {
   const token = await getIdToken();
   let res;
   try {
@@ -60,150 +43,12 @@ async function authedFetch(getIdToken, path, body) {
   return data;
 }
 
-// /api/statements/quota is a GET (matches the /status convention used by
-// the other integrations), unlike /parse and /confirm which are POST.
-async function authedGet(getIdToken, path) {
-  const token = await getIdToken();
-  const res = await fetch(`${API_URL}${path}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Falha ao consultar');
-  return data;
+/** Parses + categorizes a file into a preview — nothing is persisted yet. */
+export function parseStatement({ getIdToken, filename, content, bankId, columnMap }) {
+  return authedPost(getIdToken, '/api/statements/parse', { filename, content, bankId, columnMap });
 }
 
-function localQuota(user, importBatches) {
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const importsThisMonth = (importBatches || []).filter((b) => new Date(b.importedAt) >= startOfMonth).length;
-  const permission = canImportStatement(user, importsThisMonth);
-  return { ...permission, plan: user?.plan ?? 'free', importsThisMonth, advancedImports: canUseAdvancedImports(user) };
-}
-
-export async function getImportQuota({ getIdToken, user, importBatches }) {
-  if (isFirebaseConfigured) return authedGet(getIdToken, '/api/statements/quota').catch(() => localQuota(user, importBatches));
-  return localQuota(user, importBatches);
-}
-
-function categorizeRows(rows, { userRules, useClassifier }) {
-  return rows.map((row) => {
-    const result = categorize(row.description, { userRules, useClassifier });
-    return {
-      ...row,
-      category: result.category,
-      suggestedCategory: result.category,
-      subcategory: result.subcategory,
-      confidence: result.confidence,
-      categorySource: result.source,
-      include: !row.isDuplicate,
-    };
-  });
-}
-
-function buildPreview(normalized, existingTransactions, userRules, useClassifier, format) {
-  const deduped = flagDuplicates(normalized, existingTransactions);
-  const transactions = categorizeRows(deduped, { userRules, useClassifier });
-  return {
-    needsMapping: false,
-    format,
-    totalCount: transactions.length,
-    categorizedCount: transactions.filter((t) => t.category !== UNCATEGORIZED).length,
-    duplicateCount: transactions.filter((t) => t.isDuplicate).length,
-    transactions,
-  };
-}
-
-/**
- * Parses+categorizes a file into a preview — nothing is persisted yet.
- * @param {{ getIdToken, filename, content, bankId, columnMap, user, data }} args
- */
-export async function parseStatement({ getIdToken, filename, content, bankId, columnMap, user, data }) {
-  if (isFirebaseConfigured) {
-    return authedFetch(getIdToken, '/api/statements/parse', { filename, content, bankId, columnMap });
-  }
-
-  const quota = localQuota(user, data.importBatches);
-  if (!quota.allowed) throw new Error('Limite de importações do seu plano foi atingido este mês.');
-
-  const format = detectFormat(filename);
-  let rawRows;
-
-  if (format === 'ofx') {
-    rawRows = parseOfx(content).map((tx) => ({ date: tx.date, description: tx.description, amount: tx.amount }));
-  } else {
-    const parsed = parseCsv(content);
-    const columns = columnMap || parsed.columns;
-    if (!columnMap && columns.confidence < 1) {
-      return { needsMapping: true, headers: parsed.headers, columns };
-    }
-    rawRows = mapCsvRows(parsed.rows, columns);
-  }
-
-  const normalized = rawRows
-    .map((row) => normalizeTransactionRow(row))
-    .filter(Boolean)
-    .map((row) => ({ ...row, bankId: bankId || null }));
-
-  return buildPreview(normalized, data.transactions, data.userCategoryRules || [], quota.advancedImports, format);
-}
-
-/**
- * Persists the (possibly user-edited) preview array.
- * @param {{ getIdToken, batchId, bankId, filename, format, transactions, user, data }} args
- */
-export async function confirmStatement({ getIdToken, batchId, bankId, filename, format, transactions, user, data }) {
-  if (isFirebaseConfigured) {
-    return authedFetch(getIdToken, '/api/statements/confirm', { batchId, bankId, filename, format, transactions });
-  }
-
-  const quota = localQuota(user, data.importBatches);
-  if (!quota.allowed) throw new Error('Limite de importações do seu plano foi atingido este mês.');
-
-  const included = transactions.filter((t) => t.include !== false);
-
-  data.addTransactionsBulk(
-    included.map((tx) => ({
-      description: tx.description,
-      category: tx.category,
-      subcategory: tx.subcategory ?? null,
-      amount: tx.amount,
-      type: tx.type,
-      date: tx.date,
-      bankId: bankId || tx.bankId || null,
-      source: 'statement-import',
-      importBatchId: batchId,
-    }))
-  );
-
-  included
-    .filter((tx) => tx.suggestedCategory && tx.category !== tx.suggestedCategory)
-    .forEach((tx) => {
-      data.addUserCategoryRule({
-        pattern: normalizeDescription(tx.description),
-        category: tx.category,
-        subcategory: tx.subcategory ?? null,
-        source: 'user-correction',
-      });
-    });
-
-  const finalBatchId = data.addImportBatch({
-    id: batchId,
-    filename,
-    bankId: bankId || null,
-    format,
-    importedAt: new Date().toISOString(),
-    transactionCount: included.length,
-    incomeCount: included.filter((t) => t.type === 'income').length,
-    expenseCount: included.filter((t) => t.type === 'expense').length,
-    duplicateCount: included.filter((t) => t.isDuplicate).length,
-    uncategorizedCount: included.filter((t) => t.category === UNCATEGORIZED).length,
-    source: 'statement-import',
-  });
-
-  if (quota.advancedImports) {
-    const allTransactions = [...data.transactions, ...included];
-    data.setRecurringPatternsBulk(detectRecurring(allTransactions));
-  }
-
-  return { imported: included.length, batchId: finalBatchId };
+/** Persists the (possibly user-edited) preview array. */
+export function confirmStatement({ getIdToken, batchId, bankId, filename, format, transactions }) {
+  return authedPost(getIdToken, '/api/statements/confirm', { batchId, bankId, filename, format, transactions });
 }

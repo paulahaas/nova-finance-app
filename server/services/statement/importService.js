@@ -5,14 +5,12 @@
 // the same batch (e.g. a retried request) is idempotent rather than
 // duplicating transactions.
 //
-// All the actual parsing/categorization/detection logic lives in
-// src/services/... (shared, isomorphic) so the exact same code also runs
-// client-side in local/demo mode (see src/services/statementImportService.js)
-// — this file is just the Node-side plumbing around it.
+// The parsing/categorization/detection logic itself lives in
+// src/services/statement/... (pure, dependency-free modules covered by
+// unit tests) — this file is just the Node-side plumbing around it.
 
 import { randomUUID } from 'crypto';
 import { adminDb } from '../firebaseAdmin.js';
-import { canImportStatement, canUseAdvancedImports } from '../../../src/config/permissions.js';
 import { parseCsv, mapCsvRows } from '../../../src/services/statement/csvParser.js';
 import { parseOfx } from '../../../src/services/statement/ofxParser.js';
 import { normalizeTransactionRow, normalizeDescription } from '../../../src/services/statement/normalizer.js';
@@ -25,42 +23,10 @@ function detectFormat(filename) {
   return filename.toLowerCase().endsWith('.ofx') ? 'ofx' : 'csv';
 }
 
-async function getUserPlan(uid) {
-  const snap = await adminDb.collection('users').doc(uid).get();
-  return snap.exists ? snap.data().plan ?? 'free' : 'free';
-}
-
-/**
- * Reads the caller's plan from Firestore (it isn't in the Auth token) and
- * this month's import count, and returns whether another import is allowed.
- */
-export async function checkImportQuota(uid) {
-  const plan = await getUserPlan(uid);
-  const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
-  const snap = await adminDb
-    .collection('users')
-    .doc(uid)
-    .collection('importBatches')
-    .where('importedAt', '>=', startOfMonth)
-    .get();
-  const importsThisMonth = snap.size;
-  const permission = canImportStatement({ plan }, importsThisMonth);
-  return { ...permission, plan, importsThisMonth, advancedImports: canUseAdvancedImports({ plan }) };
-}
-
-function quotaError() {
-  const err = new Error('Limite de importações do seu plano foi atingido este mês.');
-  err.status = 403;
-  return err;
-}
-
 /**
  * @returns {{ needsMapping: true, headers, columns } | { needsMapping: false, format, totalCount, categorizedCount, duplicateCount, transactions }}
  */
 export async function parseStatementForUser({ uid, filename, content, bankId, columnMap }) {
-  const quota = await checkImportQuota(uid);
-  if (!quota.allowed) throw quotaError();
-
   const format = detectFormat(filename);
   let rawRows;
 
@@ -90,7 +56,7 @@ export async function parseStatementForUser({ uid, filename, content, bankId, co
   const deduped = flagDuplicates(normalized, existingTransactions);
 
   const transactions = deduped.map((row) => {
-    const result = categorize(row.description, { userRules, useClassifier: quota.advancedImports });
+    const result = categorize(row.description, { userRules, useClassifier: true });
     return {
       ...row,
       category: result.category,
@@ -118,9 +84,6 @@ export async function parseStatementForUser({ uid, filename, content, bankId, co
  * is idempotent (same batch doc, same deterministic transaction doc IDs).
  */
 export async function confirmStatementImport({ uid, batchId, bankId, filename, format, transactions }) {
-  const quota = await checkImportQuota(uid);
-  if (!quota.allowed) throw quotaError();
-
   const finalBatchId = batchId || randomUUID();
   const userRef = adminDb.collection('users').doc(uid);
   const transactionsRef = userRef.collection('transactions');
@@ -183,9 +146,7 @@ export async function confirmStatementImport({ uid, batchId, bankId, filename, f
     { merge: true }
   );
 
-  if (quota.advancedImports) {
-    await refreshRecurringPatterns(uid);
-  }
+  await refreshRecurringPatterns(uid);
 
   return { imported: included.length, batchId: finalBatchId };
 }

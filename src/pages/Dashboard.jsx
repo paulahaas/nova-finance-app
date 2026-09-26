@@ -46,7 +46,6 @@ export default function Dashboard() {
           label="Saldo disponível"
           value={formatCurrency(computed.totalBalance)}
           size="xl"
-          sub="+12,4% em relação ao mês passado"
         />
       </Panel>
 

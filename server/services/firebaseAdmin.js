@@ -1,8 +1,8 @@
 // Firebase Admin init, used server-side to (a) verify the ID tokens the
-// frontend sends on authenticated requests, and (b) let the Stripe webhook
-// write subscription state directly to Firestore — the Admin SDK bypasses
-// firestore.rules, which is exactly why only the webhook (never a
-// user-facing route) should use it for writes.
+// frontend sends on authenticated requests, and (b) let trusted server code
+// (statement import, Open Finance sync) write to Firestore — the Admin SDK bypasses
+// firestore.rules, so every route using it must authenticate the caller
+// first (see middleware/auth.js).
 
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';

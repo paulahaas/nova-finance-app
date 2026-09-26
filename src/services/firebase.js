@@ -1,12 +1,9 @@
 // Firebase client init. Reads config from VITE_FIREBASE_* env vars — see
-// .env.example. When those aren't set (nothing filled in, or a fresh
-// clone without a Firebase project yet), the app falls back to the local
-// demo persistence layer (services/storageService.js) instead of crashing.
-// See contexts/AuthContext.jsx and contexts/DataContext.jsx for the
-// branch point.
+// .env.example. Without them there is no login and no data, so auth/db stay
+// null and the login screen reports the missing configuration.
 
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -22,4 +19,3 @@ const app = isFirebaseConfigured ? (getApps()[0] ?? initializeApp(firebaseConfig
 
 export const auth = app ? getAuth(app) : null;
 export const db = app ? getFirestore(app) : null;
-export const googleProvider = new GoogleAuthProvider();

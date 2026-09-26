@@ -3,10 +3,10 @@ import clsx from 'clsx';
 import Panel from './Panel';
 import SelectMenu from './SelectMenu';
 import { formatCurrency, formatDate } from '../utils/format';
-import { buildDemoCategories } from '../data/demoData';
+import { CATEGORIES, INCOME_CATEGORY } from '../config/categories';
 import { UNCATEGORIZED } from '../services/statement/categorizer.js';
 
-const CATEGORY_OPTIONS = [...buildDemoCategories(), 'Entrada', UNCATEGORIZED].map((c) => ({ value: c, label: c }));
+const CATEGORY_OPTIONS = [...CATEGORIES, INCOME_CATEGORY, UNCATEGORIZED].map((c) => ({ value: c, label: c }));
 
 function ConfidenceBadge({ confidence, source }) {
   if (source === 'uncategorized') {

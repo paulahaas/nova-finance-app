@@ -9,7 +9,7 @@ const MESSAGES = {
   'auth/popup-closed-by-user': 'Login cancelado.',
   'auth/network-request-failed': 'Falha de conexão. Verifique sua internet.',
   'auth/too-many-requests': 'Muitas tentativas. Tente novamente em instantes.',
-  'demo/account-not-found': 'Nenhuma conta encontrada com esse e-mail. Crie uma conta ou experimente o modo demonstração.',
+  'auth/requires-recent-login': 'Por segurança, entre de novo e tente outra vez.',
 };
 
 export function friendlyAuthError(err) {

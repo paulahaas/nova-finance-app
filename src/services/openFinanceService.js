@@ -1,5 +1,5 @@
 // Client for the Open Finance endpoints (server/routes/openFinance.js).
-// Requires a signed-in Firebase user, same as paymentService.js.
+// Requires a signed-in Firebase user, the token is checked server-side.
 
 import { API_URL } from '../config/api';
 

@@ -12,8 +12,6 @@ import {
   Upload,
 } from 'lucide-react';
 import clsx from 'clsx';
-import { useAuth } from '../contexts/AuthContext';
-import { getPlan } from '../config/plans';
 
 const ITEMS = [
   { to: '/app', label: 'Home', icon: Home, end: true },
@@ -29,10 +27,6 @@ const ITEMS = [
 ];
 
 export default function Sidebar() {
-  const { user } = useAuth();
-  const plan = getPlan(user?.plan);
-  const isFree = plan.id === 'free';
-
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 border-r border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
       <div className="px-6 py-8">
@@ -60,16 +54,6 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="p-4 m-3 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)]">
-        <p className="text-sm font-medium">{plan.name}</p>
-        {isFree ? (
-          <NavLink to="/pro" className="text-sm text-[var(--color-accent)] hover:underline">
-            Upgrade →
-          </NavLink>
-        ) : (
-          <p className="text-xs text-[var(--color-text-dim)]">Assinatura ativa</p>
-        )}
-      </div>
     </aside>
   );
 }

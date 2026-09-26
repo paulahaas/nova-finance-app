@@ -1,10 +1,8 @@
 import { useMemo, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import Panel from '../../components/Panel';
-import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { forecastBalance } from '../../services/financeService';
-import { canUseAdvancedInsights } from '../../config/permissions';
 import { formatCurrency, formatCompact } from '../../utils/format';
 import clsx from 'clsx';
 
@@ -16,10 +14,8 @@ const RANGES = [
 ];
 
 export default function Forecast() {
-  const { user } = useAuth();
   const { computed } = useData();
   const [range, setRange] = useState(3);
-  const advanced = canUseAdvancedInsights(user);
 
   const points = useMemo(
     () =>
@@ -80,14 +76,6 @@ export default function Forecast() {
           </ResponsiveContainer>
         </div>
       </Panel>
-
-      {!advanced && (
-        <Panel className="text-center">
-          <p className="text-sm text-[var(--color-text-dim)]">
-            Previsões avançadas (considerando sazonalidade e comportamento histórico) estão disponíveis no NOVA Pro.
-          </p>
-        </Panel>
-      )}
     </div>
   );
 }

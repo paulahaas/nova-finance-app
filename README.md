@@ -5,7 +5,7 @@ Seu dinheiro. Sob seu controle.
 [![CI](https://github.com/paulahaas/nova-finance-app/actions/workflows/ci.yml/badge.svg)](https://github.com/paulahaas/nova-finance-app/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-App de organização financeira pessoal — contas, cartões, metas, orçamento e um assistente (Copilot) pra perguntas tipo "posso comprar isso?". React + Vite no front, Express no back, Firebase/Stripe/Pluggy quando configurados.
+App de finanças pessoais só pra mim: contas, cartões, metas, orçamento e um assistente (Copilot). React + Vite no front, Firebase (login + Firestore) e uma API Express que roda como função da Vercel.
 
 ![Dashboard do NOVA](docs/dashboard.png)
 
@@ -13,41 +13,26 @@ App de organização financeira pessoal — contas, cartões, metas, orçamento 
 
 ```bash
 npm install
-cp .env.example .env
-npm run dev
+cp .env.example .env   # chaves do Firebase e da API do Claude
+npm run server         # API local em :8787
+npm run dev            # site em :5173 (o Vite manda /api pro servidor)
 ```
 
-Sem mexer em mais nada já dá pra usar o app inteiro (login, bancos, cartões, metas...), só que salvando no `localStorage` em vez de banco de verdade. Pra IA real, pagamento e conexão bancária real, também precisa do backend:
-
-```bash
-npm run server
-```
+Sem as chaves do Firebase não há login nem dados. Em produção (Vercel) o `api/index.js` serve o mesmo app Express de `server/app.js`.
 
 ## O que tem
 
-Dashboard, bancos/contas/cartões, transações, metas (com foto), assinaturas recorrentes, "posso comprar?", Copilot, relatórios e previsão, plano Free/Pro. Nav própria no mobile, não é o desktop espremido.
+Dashboard, bancos/contas/cartões, transações, metas (com foto), assinaturas recorrentes, "posso comprar?", Copilot, insights, relatórios e previsão. Instalável no celular (PWA) e com nav própria no mobile.
 
-Importação de extrato (CSV/OFX) categoriza sozinha o que reconhece por regra, usa um classificador próprio (TF-IDF, sem serviço externo) pro resto, aprende com as correções que você faz, detecta duplicata e assinatura recorrente antes de confirmar qualquer coisa.
+Importação de extrato (CSV/OFX) categoriza sozinha o que reconhece por regra, usa um classificador próprio (TF-IDF, sem serviço externo) pro resto, aprende com as correções, detecta duplicata e assinatura recorrente antes de confirmar qualquer coisa. Exportação em CSV/Excel e JSON em Configurações.
 
-## Integrações reais (opcionais)
+## Segurança
 
-Cada uma cai pra modo demo se não tiver configurada — nenhuma quebra o app:
-
-- **Firebase** (login + banco de dados) — cria projeto no console, ativa Auth (e-mail/senha + Google) e Firestore, copia as chaves pro `.env`
-- **Stripe** (assinatura Pro) — `npm run setup:stripe` já cria o produto/preço pra você depois de colocar a secret key
-- **Pluggy** (Open Finance, conexão bancária de verdade) — precisa do Firebase configurado também, já que grava direto no Firestore do usuário
-
-Detalhes de cada variável estão comentados no `.env.example`. Não é mock só pra mostrar tela: essa versão está de pé com Firebase, Stripe e Pluggy reais, rodando em produção.
-
-Duas decisões que valem mencionar: cartão salva só os últimos 4 dígitos e a validade — número completo e CVV nunca são pedidos, porque isso é rastreio de gasto, não processamento de pagamento, e CVV não deveria ser guardado em lugar nenhum. E os limites de cada plano (Free/Pro) ficam centralizados num arquivo só (`src/config/plans.js`), então mudar um preço ou um limite não vira caça ao tesouro pelo código.
+App de um usuário só: não existe cadastro, e o `firestore.rules` e a API aceitam apenas o UID do dono (`src/config/owner.js`). Cartão guarda só os últimos 4 dígitos e a validade — número completo e CVV nunca são pedidos.
 
 ## Estrutura
 
-`src/pages` por área, `src/contexts` decide Firebase vs localStorage, `src/config/plans.js` centraliza os limites do plano Free/Pro. `server/` espelha isso pro lado do backend (copilot, stripe, open-finance).
-
-## Falta
-
-Plano anual na UI, app nativo.
+`src/pages` por área, `src/contexts` (auth e dados no Firestore), `src/services` (cálculos e importação), `server/` (API: importação de extrato, Copilot, Open Finance).
 
 ## Testes
 

@@ -2,40 +2,30 @@ import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import Panel from '../../components/Panel';
 import Button from '../../components/Button';
-import UpgradeSheet from '../../components/UpgradeSheet';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
-import { canExportData } from '../../config/permissions';
+import Papa from 'papaparse';
 import { friendlyAuthError } from '../../utils/authErrors';
-
-const SECTIONS = [
-  'Notificações',
-  'Segurança',
-  'Privacidade',
-  'Aparência',
-  'Moeda',
-  'Categorias',
-  'Metas',
-  'Bancos',
-  'Cartões',
-];
 
 export default function Settings() {
   const { user, logout, deleteAccount } = useAuth();
   const data = useData();
-  const [showUpgrade, setShowUpgrade] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteError, setDeleteError] = useState('');
   const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
-  const exportAllowed = canExportData(user);
 
-  function handleExport() {
-    if (!exportAllowed) {
-      setShowUpgrade(true);
-      return;
-    }
+  function download(filename, content, type) {
+    const url = URL.createObjectURL(new Blob([content], { type }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleExportJson() {
     const payload = {
       user,
       banks: data.banks,
@@ -45,13 +35,24 @@ export default function Settings() {
       goals: data.goals,
       subscriptions: data.subscriptions,
     };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'nova-dados.json';
-    a.click();
-    URL.revokeObjectURL(url);
+    download('nova-dados.json', JSON.stringify(payload, null, 2), 'application/json');
+  }
+
+  // Semicolon-delimited with a BOM so Excel (pt-BR) opens the accents and
+  // columns correctly.
+  function handleExportCsv() {
+    const bankName = (id) => data.banks.find((b) => b.id === id)?.name ?? '';
+    const rows = [...data.transactions]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .map((t) => ({
+        Data: new Date(t.date).toLocaleDateString('pt-BR'),
+        Descrição: t.description,
+        Categoria: t.category,
+        Tipo: t.type === 'income' ? 'Entrada' : 'Saída',
+        Valor: String(t.amount).replace('.', ','),
+        Banco: bankName(t.bankId),
+      }));
+    download('nova-transacoes.csv', '﻿' + Papa.unparse(rows, { delimiter: ';' }), 'text/csv;charset=utf-8');
   }
 
   async function handleDeleteAccount(e) {
@@ -72,17 +73,12 @@ export default function Settings() {
       <h1 className="text-2xl font-semibold">Configurações</h1>
 
       <Panel className="divide-y divide-[var(--color-border)]">
-        {SECTIONS.map((s) => (
-          <button key={s} className="w-full flex items-center justify-between py-3 text-sm text-left first:pt-0 last:pb-0">
-            {s}
-            <span className="text-[var(--color-text-faint)]">›</span>
-          </button>
-        ))}
-      </Panel>
-
-      <Panel>
-        <button onClick={handleExport} className="w-full flex items-center justify-between text-sm">
-          Exportar dados
+        <button onClick={handleExportCsv} className="w-full min-h-[44px] flex items-center justify-between text-sm pb-3">
+          Exportar transações (CSV/Excel)
+          <span className="text-[var(--color-text-faint)]">›</span>
+        </button>
+        <button onClick={handleExportJson} className="w-full min-h-[44px] flex items-center justify-between text-sm pt-3">
+          Backup completo (JSON)
           <span className="text-[var(--color-text-faint)]">›</span>
         </button>
       </Panel>
@@ -142,14 +138,6 @@ export default function Settings() {
       <Button variant="ghost" className="w-full" onClick={() => { logout(); navigate('/login'); }}>
         Sair
       </Button>
-
-      {showUpgrade && (
-        <UpgradeSheet
-          title="Exportação de dados é exclusiva do NOVA Pro"
-          description="Exporte seu histórico financeiro completo em formato aberto."
-          onClose={() => setShowUpgrade(false)}
-        />
-      )}
     </div>
   );
 }

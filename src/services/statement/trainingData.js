@@ -1,8 +1,8 @@
 // Curated PT-BR training examples for the tier-2 classifier (see
 // classifier.js). Covers merchants/descriptions that the tier-1 keyword
 // rules (rules.js) won't catch by exact name — generic or less common
-// transaction text. Categories match buildDemoCategories() in
-// src/data/demoData.js, plus 'Entrada' for income.
+// transaction text. Categories match CATEGORIES in
+// src/config/categories.js, plus 'Entrada' for income.
 //
 // This is a small, hand-written seed set, not real user data (spec section
 // 32/22: never train on real financial data without consent) — it only

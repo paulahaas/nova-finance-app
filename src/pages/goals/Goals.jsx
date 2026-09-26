@@ -1,29 +1,12 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Panel from '../../components/Panel';
 import Button from '../../components/Button';
 import ProgressBar from '../../components/ProgressBar';
-import UpgradeSheet from '../../components/UpgradeSheet';
-import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
-import { canCreateGoal } from '../../config/permissions';
 import { formatCurrency, formatDateLong } from '../../utils/format';
 
 export default function Goals() {
-  const { user } = useAuth();
   const { goals } = useData();
-  const [showUpgrade, setShowUpgrade] = useState(false);
-  const navigate = useNavigate();
-
-  const permission = canCreateGoal(user, goals.length);
-
-  function handleAdd() {
-    if (!permission.allowed) {
-      setShowUpgrade(true);
-      return;
-    }
-    navigate('/app/goals/new');
-  }
 
   return (
     <div className="space-y-6">
@@ -57,17 +40,9 @@ export default function Goals() {
         })}
       </div>
 
-      <Button variant="outline" className="w-full" onClick={handleAdd}>
+      <Button as={Link} to="/app/goals/new" variant="outline" className="w-full">
         + Nova meta
       </Button>
-
-      {showUpgrade && (
-        <UpgradeSheet
-          title="Limite de metas atingido"
-          description="No plano Free você pode ter até 3 metas. Faça upgrade para o NOVA Pro e crie metas ilimitadas."
-          onClose={() => setShowUpgrade(false)}
-        />
-      )}
     </div>
   );
 }

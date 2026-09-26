@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Panel from '../../components/Panel';
 import Button from '../../components/Button';
@@ -6,40 +6,27 @@ import SelectMenu from '../../components/SelectMenu';
 import Dropzone from '../../components/Dropzone';
 import ColumnMappingForm from '../../components/ColumnMappingForm';
 import ImportPreviewTable from '../../components/ImportPreviewTable';
-import UpgradeSheet from '../../components/UpgradeSheet';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
-import { readStatementFile, getImportQuota, parseStatement, confirmStatement } from '../../services/statementImportService';
+import { readStatementFile, parseStatement, confirmStatement } from '../../services/statementImportService';
 
 export default function ImportStatement() {
-  const { user, getIdToken } = useAuth();
-  const data = useData();
-  const { banks } = data;
+  const { getIdToken } = useAuth();
+  const { banks } = useData();
   const navigate = useNavigate();
 
   const [step, setStep] = useState('upload'); // upload | mapping | preview | done
-  const [bankId, setBankId] = useState(banks[0]?.id ?? '');
+  const [chosenBankId, setChosenBankId] = useState('');
+  // Banks load asynchronously from Firestore, so default to the first one
+  // until the user picks another.
+  const bankId = chosenBankId || banks[0]?.id || '';
   const [fileInfo, setFileInfo] = useState(null); // { filename, content }
   const [pendingMapping, setPendingMapping] = useState(null); // { headers, columns }
   const [preview, setPreview] = useState(null); // parseStatement() result
   const [batchId] = useState(() => crypto.randomUUID());
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [quota, setQuota] = useState(null);
-  const [showUpgrade, setShowUpgrade] = useState(false);
   const [result, setResult] = useState(null);
-
-  useEffect(() => {
-    getImportQuota({ getIdToken, user, importBatches: data.importBatches }).then(setQuota);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Banks load asynchronously from Firestore, so banks[0] can still be
-  // undefined at the useState() initializer above — pick a default once
-  // the list actually arrives, without overriding a choice the user made.
-  useEffect(() => {
-    if (!bankId && banks.length > 0) setBankId(banks[0].id);
-  }, [banks, bankId]);
 
   async function handleFile(file) {
     setError('');
@@ -64,22 +51,7 @@ export default function ImportStatement() {
     }
   }
 
-  async function useDemoFile() {
-    setError('');
-    try {
-      const res = await fetch('/demo/extrato-demo.csv');
-      const content = await res.text();
-      setFileInfo({ filename: 'extrato-demo.csv', content });
-    } catch {
-      setError('Não conseguimos carregar o arquivo de exemplo agora.');
-    }
-  }
-
   async function runParse(columnMap) {
-    if (quota && !quota.allowed) {
-      setShowUpgrade(true);
-      return;
-    }
     setBusy(true);
     setError('');
     try {
@@ -89,8 +61,6 @@ export default function ImportStatement() {
         content: fileInfo.content,
         bankId,
         columnMap,
-        user,
-        data,
       });
       if (result.needsMapping) {
         setPendingMapping({ headers: result.headers, columns: result.columns });
@@ -124,8 +94,6 @@ export default function ImportStatement() {
         filename: fileInfo.filename,
         format: preview.format,
         transactions: preview.transactions,
-        user,
-        data,
       });
       setResult(confirmResult);
       setStep('done');
@@ -152,11 +120,6 @@ export default function ImportStatement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Importar extrato</h1>
-        {quota && quota.plan === 'free' && (
-          <span className="text-sm text-[var(--color-text-dim)]">
-            {quota.importsThisMonth} de {quota.limit} importações este mês
-          </span>
-        )}
       </div>
 
       {step === 'upload' && (
@@ -165,25 +128,12 @@ export default function ImportStatement() {
             <p className="text-sm text-[var(--color-text-dim)] mb-1.5">Banco</p>
             <SelectMenu
               value={bankId}
-              onChange={setBankId}
+              onChange={setChosenBankId}
               options={banks.map((b) => ({ value: b.id, label: b.name }))}
             />
           </div>
 
           <Dropzone onFile={handleFile} error={error} />
-
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={useDemoFile}
-              className="text-sm text-[var(--color-accent)] hover:underline"
-            >
-              Usar arquivo de exemplo
-            </button>
-            {fileInfo?.filename === 'extrato-demo.csv' && (
-              <p className="text-xs text-[var(--color-text-dim)] mt-1">Arquivo de exemplo carregado.</p>
-            )}
-          </div>
 
           <Button className="w-full" disabled={!fileInfo || busy} onClick={() => runParse(null)}>
             {busy ? 'Processando...' : 'Processar arquivo'}
@@ -229,14 +179,6 @@ export default function ImportStatement() {
             </Button>
           </div>
         </Panel>
-      )}
-
-      {showUpgrade && (
-        <UpgradeSheet
-          title="Limite de importações atingido"
-          description="Seu plano gratuito permite algumas importações por mês. Faça upgrade para o NOVA Pro para importar sem limites."
-          onClose={() => setShowUpgrade(false)}
-        />
       )}
     </div>
   );

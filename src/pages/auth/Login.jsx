@@ -13,7 +13,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const { login, resetPassword, startDemo, authMode } = useAuth();
+  const { login, resetPassword } = useAuth();
   const navigate = useNavigate();
 
   async function handleSubmit(e) {
@@ -44,19 +44,6 @@ export default function Login() {
     try {
       await resetPassword(email.trim());
       setInfo('Se esse e-mail tiver uma conta, enviamos um link pra você criar uma nova senha. Olhe também o spam.');
-    } catch (err) {
-      setError(friendlyAuthError(err));
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function handleDemo() {
-    setError('');
-    setSubmitting(true);
-    try {
-      await startDemo();
-      navigate('/app');
     } catch (err) {
       setError(friendlyAuthError(err));
     } finally {
@@ -106,17 +93,6 @@ export default function Login() {
           Esqueci minha senha
         </button>
       </form>
-
-      {authMode === 'demo' && (
-        <button
-          type="button"
-          onClick={handleDemo}
-          disabled={submitting}
-          className="mt-6 text-sm text-center text-[var(--color-text-faint)] hover:text-[var(--color-text-dim)] underline underline-offset-4"
-        >
-          Só quer dar uma olhada? Ver modo demonstração
-        </button>
-      )}
     </div>
   );
 }

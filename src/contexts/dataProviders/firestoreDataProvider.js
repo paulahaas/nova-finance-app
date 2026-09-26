@@ -1,15 +1,11 @@
-// Real data provider, backed by Firestore subcollections under
-// users/{uid}/... (banks, accounts, cards, transactions, goals,
-// subscriptions) — see firestore.rules for the access-control rules that
-// keep each user scoped to their own documents (section 40/42 of the
-// product spec). Unlike the demo/local provider, a brand-new account
-// starts empty — no seeded Nubank/Banco do Brasil placeholders — because
-// this is the real, production data path.
+// Data provider backed by Firestore subcollections under users/{uid}/...
+// (banks, accounts, cards, transactions, goals, subscriptions, ...) — see
+// firestore.rules: only the owner's UID can read or write them.
 
 import { useEffect, useMemo, useState } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../services/firebase';
-import { buildDemoCategories } from '../../data/demoData';
+import { CATEGORIES } from '../../config/categories';
 import {
   availableMoney,
   dailyBudget,
@@ -61,7 +57,7 @@ export function useFirestoreDataProvider(uid, user) {
   const [importBatches] = useUserCollection(uid, 'importBatches');
   const [recurringPatterns, , updateRecurringPatternDoc] = useUserCollection(uid, 'recurringPatterns');
 
-  const categories = useMemo(() => buildDemoCategories(), []);
+  const categories = CATEGORIES;
   const alerts = []; // real alert generation is a future backend job — see README roadmap
   const achievements = []; // same for gamification — no engine wired up yet
 

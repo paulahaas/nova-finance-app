@@ -1,44 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Panel from '../components/Panel';
 import Button from '../components/Button';
 import { useAuth } from '../contexts/AuthContext';
-import { getPlan } from '../config/plans';
 import { formatCurrency } from '../utils/format';
-import { getGatewayStatus, openBillingPortal } from '../services/paymentService';
 
 export default function Profile() {
-  const { user, logout, downgradeToFree, updateUser, getIdToken } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
-  const plan = getPlan(user?.plan);
-  const isFree = plan.id === 'free';
-  const [gatewayConfigured, setGatewayConfigured] = useState(false);
-  const [managing, setManaging] = useState(false);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: '', income: '', payDay: '' });
-
-  useEffect(() => {
-    getGatewayStatus().then((s) => setGatewayConfigured(s.gatewayConfigured));
-  }, []);
 
   function handleLogout() {
     logout();
     navigate('/login');
-  }
-
-  async function handleManageSubscription() {
-    if (!gatewayConfigured) {
-      // Demo mode fallback — no real Stripe subscription to manage.
-      downgradeToFree();
-      return;
-    }
-    setManaging(true);
-    try {
-      const { url } = await openBillingPortal(getIdToken);
-      window.location.href = url;
-    } catch {
-      setManaging(false);
-    }
   }
 
   function startEditing() {
@@ -105,24 +80,6 @@ export default function Profile() {
               Editar perfil
             </Button>
           </>
-        )}
-      </Panel>
-
-      <Panel className="flex items-center justify-between">
-        <div>
-          <p className="font-medium">{plan.name}</p>
-          <p className="text-sm text-[var(--color-text-dim)]">
-            {isFree ? 'Plano gratuito' : 'Assinatura ativa'}
-          </p>
-        </div>
-        {isFree ? (
-          <Button as={Link} to="/pro">
-            Upgrade para Pro
-          </Button>
-        ) : (
-          <Button variant="outline" onClick={handleManageSubscription} disabled={managing}>
-            Gerenciar assinatura
-          </Button>
         )}
       </Panel>
 

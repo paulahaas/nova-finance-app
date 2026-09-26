@@ -65,6 +65,7 @@ export function useFirebaseAuthProvider() {
   const authReady = authStateReady && profileReady;
 
   async function login({ email, password }) {
+    if (!auth) throw new Error('Firebase não configurado: faltam as variáveis VITE_FIREBASE_* no .env.');
     const cred = await signInWithEmailAndPassword(auth, email, password);
     return cred.user;
   }
@@ -85,18 +86,6 @@ export function useFirebaseAuthProvider() {
   async function updateUser(patch) {
     if (!firebaseUser) return;
     await updateDoc(doc(db, 'users', firebaseUser.uid), patch);
-  }
-
-  // Both go away with the Pro plan in Etapa 2 — kept only so the still
-  // existing /pro and Profile screens don't break in the meantime.
-  async function upgradeToPro() {
-    if (!firebaseUser) return;
-    await updateDoc(doc(db, 'users', firebaseUser.uid), { plan: 'pro', subscriptionStatus: 'active' });
-  }
-
-  async function downgradeToFree() {
-    if (!firebaseUser) return;
-    await updateDoc(doc(db, 'users', firebaseUser.uid), { plan: 'free', subscriptionStatus: 'canceled' });
   }
 
   // Re-authenticates first so a wrong password fails before anything is
@@ -127,14 +116,11 @@ export function useFirebaseAuthProvider() {
   return {
     user: profile,
     authReady,
-    authMode: 'firebase',
     login,
     resetPassword,
     logout,
     completeOnboarding,
     updateUser,
-    upgradeToPro,
-    downgradeToFree,
     deleteAccount,
     getIdToken,
   };

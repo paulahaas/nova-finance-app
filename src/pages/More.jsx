@@ -1,8 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Lightbulb, CreditCard, Repeat, User, Settings as SettingsIcon, Crown, BarChart3, ChevronRight, MessageCircle, Upload } from 'lucide-react';
+import { Lightbulb, CreditCard, Repeat, User, Settings as SettingsIcon, BarChart3, ChevronRight, MessageCircle, Upload } from 'lucide-react';
 import Panel from '../components/Panel';
-import { useAuth } from '../contexts/AuthContext';
-import { getPlan } from '../config/plans';
 
 const ITEMS = [
   { to: '/app/insights', label: 'Insights', icon: Lightbulb },
@@ -16,27 +14,9 @@ const ITEMS = [
 ];
 
 export default function More() {
-  const { user } = useAuth();
-  const plan = getPlan(user?.plan);
-
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Mais</h1>
-
-      {plan.id === 'free' && (
-        <Link to="/pro" className="block">
-          <Panel className="flex items-center justify-between bg-[var(--color-accent-soft)] border-[var(--color-accent-dim)]">
-            <div className="flex items-center gap-3">
-              <Crown size={22} className="text-[var(--color-accent)]" />
-              <div>
-                <p className="font-medium">NOVA Pro</p>
-                <p className="text-sm text-[var(--color-text-dim)]">Desbloqueie recursos ilimitados</p>
-              </div>
-            </div>
-            <ChevronRight size={18} className="text-[var(--color-text-dim)]" />
-          </Panel>
-        </Link>
-      )}
 
       <Panel className="divide-y divide-[var(--color-border)] !p-0">
         {ITEMS.map(({ to, label, icon: Icon }) => (

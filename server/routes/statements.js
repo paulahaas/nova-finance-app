@@ -1,17 +1,8 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { checkImportQuota, parseStatementForUser, confirmStatementImport } from '../services/statement/importService.js';
+import { parseStatementForUser, confirmStatementImport } from '../services/statement/importService.js';
 
 const router = Router();
-
-router.get('/quota', requireAuth, async (req, res) => {
-  try {
-    const quota = await checkImportQuota(req.user.uid);
-    res.json(quota);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 router.post('/parse', requireAuth, async (req, res) => {
   const { filename, content, bankId, columnMap } = req.body ?? {};

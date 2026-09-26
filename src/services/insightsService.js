@@ -68,3 +68,78 @@ export function categoryAnomalies(transactions, { lookbackMonths = 3, multiplier
 
   return anomalies.sort((a, b) => b.percentAbove - a.percentAbove);
 }
+
+function monthTotal(transactions, type, monthsAgo) {
+  const now = new Date();
+  const target = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1);
+  return transactions
+    .filter((t) => t.type === type)
+    .filter((t) => {
+      const d = new Date(t.date);
+      return d.getMonth() === target.getMonth() && d.getFullYear() === target.getFullYear();
+    })
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+}
+
+const brl = (n) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+/**
+ * Real insights for the Insights screen, derived only from the user's own
+ * data — every sentence here can be traced back to transactions or
+ * subscriptions. Returns [] when there is nothing to say yet.
+ */
+export function buildInsights({ transactions = [], subscriptions = [] }) {
+  const insights = [];
+
+  const spentNow = monthTotal(transactions, 'expense', 0);
+  const spentBefore = monthTotal(transactions, 'expense', 1);
+  if (spentBefore > 0 && spentNow > 0) {
+    const change = Math.round(((spentNow - spentBefore) / spentBefore) * 100);
+    if (Math.abs(change) >= 5) {
+      insights.push({
+        icon: change > 0 ? '📈' : '📉',
+        text: `Seus gastos deste mês estão ${Math.abs(change)}% ${change > 0 ? 'acima' : 'abaixo'} do mês passado (${brl(spentNow)} contra ${brl(spentBefore)}).`,
+      });
+    }
+  }
+
+  const incomeNow = monthTotal(transactions, 'income', 0);
+  if (incomeNow > 0) {
+    const saved = incomeNow - spentNow;
+    const rate = Math.round((saved / incomeNow) * 100);
+    insights.push({
+      icon: saved >= 0 ? '💰' : '⚠️',
+      text:
+        saved >= 0
+          ? `Você está guardando ${rate}% da renda deste mês (${brl(saved)}).`
+          : `Você já gastou ${brl(-saved)} a mais do que entrou neste mês.`,
+    });
+  }
+
+  const now = new Date();
+  const thisMonthExpenses = transactions.filter((t) => {
+    const d = new Date(t.date);
+    return t.type === 'expense' && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const top = topExpenseCategory(thisMonthExpenses);
+  if (top) {
+    insights.push({ icon: '🏷️', text: `Seu maior gasto deste mês é ${top.category}: ${brl(top.amount)}.` });
+  }
+
+  categoryAnomalies(transactions).forEach((a) => {
+    insights.push({
+      icon: '🔍',
+      text: `${a.category} está ${a.percentAbove}% acima da sua média (${brl(a.currentAmount)} contra ${brl(a.averageAmount)} de costume) — vale a pena verificar.`,
+    });
+  });
+
+  const subsTotal = subscriptions.reduce((sum, s) => sum + s.amount, 0);
+  if (subsTotal > 0) {
+    insights.push({
+      icon: '🔁',
+      text: `Suas assinaturas somam ${brl(subsTotal)} por mês, ${brl(subsTotal * 12)} por ano.`,
+    });
+  }
+
+  return insights;
+}

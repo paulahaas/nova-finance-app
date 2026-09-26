@@ -1,12 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import Panel from '../../components/Panel';
 import StatNumber from '../../components/StatNumber';
-import UpgradeSheet from '../../components/UpgradeSheet';
-import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
-import { canUseAdvancedReports, canUseAdvancedInsights } from '../../config/permissions';
 import { formatCurrency, formatCompact } from '../../utils/format';
 import { financialScore, totalSubscriptions } from '../../services/financeService';
 import { categoryAnomalies } from '../../services/insightsService';
@@ -14,11 +11,7 @@ import { categoryAnomalies } from '../../services/insightsService';
 const COLORS = ['#6b64d6', '#f5b942', '#34d399', '#a3a3a3', '#2c2a63', '#6b6b6b'];
 
 export default function Reports() {
-  const { user } = useAuth();
   const { transactions, goals, subscriptions, computed } = useData();
-  const [showUpgrade, setShowUpgrade] = useState(false);
-  const advanced = canUseAdvancedReports(user);
-  const advancedInsights = canUseAdvancedInsights(user);
 
   const anomalies = useMemo(() => categoryAnomalies(transactions), [transactions]);
 
@@ -47,7 +40,6 @@ export default function Reports() {
     return Object.entries(map).map(([name, value]) => ({ name, value }));
   }, [transactions]);
 
-  const totalExpense = byCategory.reduce((s, c) => s + c.value, 0);
   const biggest = [...byCategory].sort((a, b) => b.value - a.value).slice(0, 3);
 
   return (
@@ -59,16 +51,19 @@ export default function Reports() {
         </Link>
       </div>
 
-      {advancedInsights ? (
-        <Panel>
+      <Panel>
           <div className="flex items-center justify-between gap-4">
-            <StatNumber
-              label="Financial Score"
-              value={score.score}
-              sub={score.label}
-              tone={score.tone === 'good' ? 'positive' : score.tone === 'alert' ? 'negative' : 'default'}
-              size="md"
-            />
+            {computed.monthIncome > 0 || computed.monthExpenses > 0 ? (
+              <StatNumber
+                label="Financial Score"
+                value={score.score}
+                sub={score.label}
+                tone={score.tone === 'good' ? 'positive' : score.tone === 'alert' ? 'negative' : 'default'}
+                size="md"
+              />
+            ) : (
+              <StatNumber label="Financial Score" value="—" sub="Sem movimentações neste mês" size="md" />
+            )}
           </div>
           {anomalies.length > 0 && (
             <div className="mt-5 pt-4 border-t border-[var(--color-border)] space-y-2">
@@ -82,17 +77,7 @@ export default function Reports() {
               ))}
             </div>
           )}
-        </Panel>
-      ) : (
-        <Panel className="text-center">
-          <p className="text-sm text-[var(--color-text-dim)] mb-3">
-            Financial Score e detecção de gastos fora do padrão fazem parte dos insights avançados.
-          </p>
-          <button onClick={() => setShowUpgrade(true)} className="text-sm text-[var(--color-accent)] hover:underline">
-            Desbloquear com o NOVA Pro →
-          </button>
-        </Panel>
-      )}
+      </Panel>
 
       <Panel>
         <p className="font-medium mb-4">Gastos por categoria</p>
@@ -162,31 +147,13 @@ export default function Reports() {
         </div>
       </Panel>
 
-      {!advanced ? (
-        <Panel className="text-center">
-          <p className="text-sm text-[var(--color-text-dim)] mb-3">
-            Comparação mensal, recorrências detalhadas e exportação de dados fazem parte dos relatórios avançados.
-          </p>
-          <button onClick={() => setShowUpgrade(true)} className="text-sm text-[var(--color-accent)] hover:underline">
-            Desbloquear com o NOVA Pro →
-          </button>
-        </Panel>
-      ) : (
-        <Panel>
-          <p className="font-medium mb-2">Comparação mensal</p>
-          <p className="text-sm text-[var(--color-text-dim)]">
-            Total de gastos este mês: {formatCurrency(totalExpense)} — dados completos disponíveis para exportação no seu perfil.
-          </p>
-        </Panel>
-      )}
-
-      {showUpgrade && (
-        <UpgradeSheet
-          title="Relatórios avançados são exclusivos do NOVA Pro"
-          description="Comparações mensais, recorrências e exportação de dados."
-          onClose={() => setShowUpgrade(false)}
-        />
-      )}
+      <Panel>
+        <p className="font-medium mb-2">Este mês</p>
+        <p className="text-sm text-[var(--color-text-dim)]">
+          Entradas de {formatCurrency(computed.monthIncome)} e gastos de {formatCurrency(computed.monthExpenses)}. Seus
+          dados completos podem ser exportados em Configurações.
+        </p>
+      </Panel>
     </div>
   );
 }

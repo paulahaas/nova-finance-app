@@ -5,29 +5,21 @@ import { Landmark, Upload } from 'lucide-react';
 import Panel from '../../components/Panel';
 import Button from '../../components/Button';
 import TiltCard from '../../components/TiltCard';
-import UpgradeSheet from '../../components/UpgradeSheet';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
-import { canAddBank } from '../../config/permissions';
-import { getPlan } from '../../config/plans';
 import { formatCurrency } from '../../utils/format';
 import { getGatewayStatus, getConnectToken, syncItem } from '../../services/openFinanceService';
 
 export default function Banks() {
-  const { user, getIdToken } = useAuth();
+  const { getIdToken } = useAuth();
   const { banks, accounts, addBank } = useData();
   const [showAdd, setShowAdd] = useState(false);
-  const [showUpgrade, setShowUpgrade] = useState(false);
   const [name, setName] = useState('');
 
   const [openFinanceAvailable, setOpenFinanceAvailable] = useState(false);
   const [connectToken, setConnectToken] = useState(null);
   const [ofBusy, setOfBusy] = useState(false);
   const [ofError, setOfError] = useState('');
-
-  const plan = getPlan(user?.plan);
-  const isFree = plan.id === 'free';
-  const permission = canAddBank(user, banks.length);
 
   useEffect(() => {
     getGatewayStatus().then((s) => setOpenFinanceAvailable(s.gatewayConfigured));
@@ -41,14 +33,6 @@ export default function Banks() {
     return accountsFor(bankId).reduce((s, a) => s + a.balance, 0);
   }
 
-  function handleAddClick() {
-    if (!permission.allowed) {
-      setShowUpgrade(true);
-      return;
-    }
-    setShowAdd(true);
-  }
-
   function handleCreate(e) {
     e.preventDefault();
     if (!name.trim()) return;
@@ -58,10 +42,6 @@ export default function Banks() {
   }
 
   async function handleConnectClick() {
-    if (!permission.allowed) {
-      setShowUpgrade(true);
-      return;
-    }
     setOfError('');
     setOfBusy(true);
     try {
@@ -92,11 +72,6 @@ export default function Banks() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Meus bancos</h1>
-        {isFree && (
-          <span className="text-sm text-[var(--color-text-dim)]">
-            {banks.length} de {plan.limits.maxBanks} bancos utilizados
-          </span>
-        )}
       </div>
 
       <div className="space-y-3">
@@ -153,17 +128,9 @@ export default function Banks() {
           </form>
         </Panel>
       ) : (
-        <Button variant="outline" className="w-full" onClick={handleAddClick}>
+        <Button variant="outline" className="w-full" onClick={() => setShowAdd(true)}>
           + Adicionar banco manualmente
         </Button>
-      )}
-
-      {showUpgrade && (
-        <UpgradeSheet
-          title="Seu limite gratuito foi atingido"
-          description={`Você já conectou ${banks.length} bancos. Faça upgrade para o NOVA Pro e conecte quantos bancos quiser.`}
-          onClose={() => setShowUpgrade(false)}
-        />
       )}
 
       {connectToken && (
