@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import Anthropic from '@anthropic-ai/sdk';
 import { requireAuth } from '../middleware/auth.js';
 import { generateCopilotReply, isAiConfigured } from '../services/aiService.js';
 
@@ -14,7 +13,7 @@ router.post('/', requireAuth, async (req, res) => {
   if (message.length > 4000) {
     return res.status(400).json({ error: 'message too long' });
   }
-  if (!isAiConfigured) {
+  if (!isAiConfigured()) {
     return res.status(503).json({ error: 'AI backend not configured' });
   }
 
@@ -22,9 +21,8 @@ router.post('/', requireAuth, async (req, res) => {
     const reply = await generateCopilotReply({ uid: req.user.uid, message: message.trim(), history });
     res.json({ reply });
   } catch (err) {
-    console.error('[copilot] AI request failed:', err instanceof Anthropic.APIError ? `${err.status} ${err.message}` : err.message);
-    const status = err instanceof Anthropic.RateLimitError ? 429 : 502;
-    res.status(status).json({ error: 'AI request failed' });
+    console.error('[copilot] AI request failed:', err.status ? `${err.status} ${err.message}` : err.message);
+    res.status(err.status === 429 ? 429 : 502).json({ error: 'AI request failed' });
   }
 });
 

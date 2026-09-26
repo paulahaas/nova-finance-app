@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const create = vi.fn();
 vi.mock('@anthropic-ai/sdk', () => ({
@@ -57,8 +57,10 @@ describe('sanitizeHistory', () => {
   });
 });
 
-describe('generateCopilotReply', () => {
+describe('generateCopilotReply with Claude', () => {
   beforeEach(() => {
+    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test');
+    vi.stubEnv('LLM_API_KEY', '');
     create.mockReset();
     create.mockResolvedValue({ stop_reason: 'end_turn', content: [{ type: 'text', text: ' Você gastou R$ 45. ' }] });
   });
@@ -81,5 +83,47 @@ describe('generateCopilotReply', () => {
   it('throws when the model returns no text', async () => {
     create.mockResolvedValue({ stop_reason: 'max_tokens', content: [] });
     await expect(generateCopilotReply({ uid: 'u1', message: 'oi', history: [] })).rejects.toThrow('empty reply');
+  });
+});
+
+describe('generateCopilotReply with an OpenAI-compatible provider (Groq)', () => {
+  const fetchMock = vi.fn();
+  beforeEach(() => {
+    vi.stubEnv('ANTHROPIC_API_KEY', '');
+    vi.stubEnv('LLM_API_KEY', 'gsk_test');
+    vi.stubEnv('LLM_BASE_URL', '');
+    vi.stubEnv('LLM_MODEL', '');
+    fetchMock.mockReset();
+    vi.stubGlobal('fetch', fetchMock);
+    create.mockReset();
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it('calls Groq chat completions with her data in the system message', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: ' Gastou R$ 45. ' }, finish_reason: 'stop' }] }),
+    });
+    const reply = await generateCopilotReply({ uid: 'u1', message: 'quanto gastei?', history: [] });
+
+    expect(reply).toBe('Gastou R$ 45.');
+    expect(create).not.toHaveBeenCalled();
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://api.groq.com/openai/v1/chat/completions');
+    expect(init.headers.Authorization).toBe('Bearer gsk_test');
+    const body = JSON.parse(init.body);
+    expect(body.model).toBe('openai/gpt-oss-120b');
+    expect(body.reasoning_effort).toBe('medium');
+    expect(body.messages[0].role).toBe('system');
+    expect(body.messages[0].content).toContain('iFood');
+    expect(body.messages[1]).toEqual({ role: 'user', content: 'quanto gastei?' });
+  });
+
+  it('surfaces the HTTP status so the route can answer 429 on rate limits', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 429, text: async () => 'rate limited' });
+    await expect(generateCopilotReply({ uid: 'u1', message: 'oi', history: [] })).rejects.toMatchObject({ status: 429 });
   });
 });

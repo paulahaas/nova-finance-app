@@ -1,18 +1,27 @@
-// Copilot AI service. The Anthropic API key lives only here, read from an
-// environment variable — it must never be shipped to the frontend bundle.
-// The user's data is loaded from Firestore on the server (never trusted from
-// the request body) and handed to the model as context.
+// Copilot AI service. API keys live only here, read from environment
+// variables — they must never be shipped to the frontend bundle. The user's
+// data is loaded from Firestore on the server (never trusted from the
+// request body) and handed to the model as context.
+//
+// Two providers, picked at call time from the environment:
+//   - ANTHROPIC_API_KEY  -> Claude (Sonnet 5), paid per use
+//   - LLM_API_KEY        -> any OpenAI-compatible chat API; defaults to
+//                           Groq's free tier (openai/gpt-oss-120b)
+// If both are set, Claude wins.
 
 import Anthropic from '@anthropic-ai/sdk';
 import { adminDb } from './firebaseAdmin.js';
 import { buildCopilotContext } from '../../src/services/copilotContext.js';
 
-export const isAiConfigured = Boolean(process.env.ANTHROPIC_API_KEY);
+export const aiProvider = () => (process.env.ANTHROPIC_API_KEY ? 'anthropic' : process.env.LLM_API_KEY ? 'openai-compatible' : null);
+export const isAiConfigured = () => aiProvider() !== null;
 
 // Sonnet 5 for the conversation: strong enough to do the arithmetic and
 // reason about the user's month, at $2/$10 per million tokens. Override with
 // COPILOT_MODEL if needed.
-const MODEL = process.env.COPILOT_MODEL || 'claude-sonnet-5';
+const CLAUDE_MODEL = process.env.COPILOT_MODEL || 'claude-sonnet-5';
+const LLM_BASE_URL = () => (process.env.LLM_BASE_URL || 'https://api.groq.com/openai/v1').replace(/\/$/, '');
+const LLM_MODEL = () => process.env.LLM_MODEL || 'openai/gpt-oss-120b';
 
 let client = null;
 function getClient() {
@@ -65,28 +74,70 @@ async function loadUserData(uid) {
   return { user: profile.exists ? profile.data() : {}, banks, accounts, cards, transactions, goals, subscriptions };
 }
 
-export async function generateCopilotReply({ uid, message, history }) {
-  const data = await loadUserData(uid);
-  const dataBlock = `Dados da usuária (atualizados agora):\n\n${buildCopilotContext(data)}`;
-
+async function askClaude({ system, dataBlock, messages }) {
   const response = await getClient().messages.create({
-    model: MODEL,
+    model: CLAUDE_MODEL,
     max_tokens: 8000,
     output_config: { effort: 'medium' },
     // The data block is identical across messages of the same conversation,
     // so it is cached and later turns read it at a fraction of the price.
     system: [
-      { type: 'text', text: SYSTEM_PROMPT },
+      { type: 'text', text: system },
       { type: 'text', text: dataBlock, cache_control: { type: 'ephemeral' } },
     ],
-    messages: [...sanitizeHistory(history), { role: 'user', content: message }],
+    messages,
   });
+  return {
+    text: response.content
+      .filter((b) => b.type === 'text')
+      .map((b) => b.text)
+      .join('\n'),
+    stopReason: response.stop_reason,
+  };
+}
 
-  const text = response.content
-    .filter((b) => b.type === 'text')
-    .map((b) => b.text)
-    .join('\n')
-    .trim();
-  if (!text) throw new Error(`empty reply (stop_reason=${response.stop_reason})`);
-  return text;
+async function askOpenAiCompatible({ system, dataBlock, messages }) {
+  const model = LLM_MODEL();
+  const body = {
+    model,
+    messages: [{ role: 'system', content: `${system}
+
+${dataBlock}` }, ...messages],
+    max_completion_tokens: 3000,
+    temperature: 0.4,
+  };
+  // gpt-oss models take a reasoning effort and can hide their reasoning text.
+  if (model.includes('gpt-oss')) {
+    body.reasoning_effort = process.env.LLM_REASONING_EFFORT || 'medium';
+    body.include_reasoning = false;
+  }
+
+  const res = await fetch(`${LLM_BASE_URL()}/chat/completions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.LLM_API_KEY}` },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = new Error(`LLM API ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    err.status = res.status;
+    throw err;
+  }
+  const json = await res.json();
+  const choice = json.choices?.[0];
+  return { text: choice?.message?.content ?? '', stopReason: choice?.finish_reason };
+}
+
+export async function generateCopilotReply({ uid, message, history }) {
+  const data = await loadUserData(uid);
+  const dataBlock = `Dados da usuária (atualizados agora):
+
+${buildCopilotContext(data)}`;
+  const messages = [...sanitizeHistory(history), { role: 'user', content: message }];
+
+  const ask = aiProvider() === 'anthropic' ? askClaude : askOpenAiCompatible;
+  const { text, stopReason } = await ask({ system: SYSTEM_PROMPT, dataBlock, messages });
+
+  const reply = text.trim();
+  if (!reply) throw new Error(`empty reply (stop_reason=${stopReason})`);
+  return reply;
 }

@@ -4,6 +4,7 @@ import cors from 'cors';
 import copilotRouter from './routes/copilot.js';
 import openFinanceRouter from './routes/openFinance.js';
 import statementsRouter from './routes/statements.js';
+import { aiProvider } from './services/aiService.js';
 import { isFirebaseAdminConfigured } from './services/firebaseAdmin.js';
 import { isOpenFinanceConfigured } from './services/openFinanceService.js';
 
@@ -22,7 +23,8 @@ app.use(express.json({ limit: '5mb' }));
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
-    aiConfigured: Boolean(process.env.ANTHROPIC_API_KEY),
+    aiConfigured: aiProvider() !== null,
+    aiProvider: aiProvider(),
     firebaseAdminConfigured: isFirebaseAdminConfigured,
     openFinanceConfigured: isOpenFinanceConfigured,
     statementImportConfigured: isFirebaseAdminConfigured,
