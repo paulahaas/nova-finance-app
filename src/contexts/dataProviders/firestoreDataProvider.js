@@ -56,6 +56,7 @@ export function useFirestoreDataProvider(uid, user) {
   const [userCategoryRules] = useUserCollection(uid, 'userCategoryRules');
   const [importBatches] = useUserCollection(uid, 'importBatches');
   const [recurringPatterns, , updateRecurringPatternDoc] = useUserCollection(uid, 'recurringPatterns');
+  const [copilotMessageDocs, addCopilotMessageDoc, , removeCopilotMessageDoc] = useUserCollection(uid, 'copilotMessages');
 
   const categories = CATEGORIES;
   const alerts = []; // real alert generation is a future backend job — see README roadmap
@@ -105,6 +106,16 @@ export function useFirestoreDataProvider(uid, user) {
     return updateRecurringPatternDoc(patternId, { status: 'dismissed' });
   }
 
+  // Chat history: ordered by an explicit timestamp so a message written a
+  // moment ago sorts right even before Firestore fills in its server time.
+  const copilotMessages = useMemo(() => [...copilotMessageDocs].sort((a, b) => a.ts - b.ts), [copilotMessageDocs]);
+  function addCopilotMessage(message) {
+    return addCopilotMessageDoc({ ts: Date.now(), ...message });
+  }
+  function clearCopilotMessages() {
+    return Promise.all(copilotMessageDocs.map((m) => removeCopilotMessageDoc(m.id)));
+  }
+
   const computed = useMemo(() => {
     const available = availableMoney({ accounts, cards, subscriptions, goals });
     const payDay = user?.payDay ?? 5;
@@ -129,6 +140,7 @@ export function useFirestoreDataProvider(uid, user) {
     userCategoryRules,
     importBatches,
     recurringPatterns,
+    copilotMessages,
     alerts,
     achievements,
     computed,
@@ -142,6 +154,8 @@ export function useFirestoreDataProvider(uid, user) {
     removeSubscription,
     acceptRecurringPattern,
     dismissRecurringPattern,
+    addCopilotMessage,
+    clearCopilotMessages,
     setCategories: () => {}, // categories aren't user-editable yet (section 19: "futuramente")
   };
 }

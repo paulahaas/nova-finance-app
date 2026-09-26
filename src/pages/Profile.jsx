@@ -9,7 +9,7 @@ export default function Profile() {
   const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: '', income: '', payDay: '' });
+  const [form, setForm] = useState({ name: '', income: '', payDay: '', aboutMe: '' });
 
   function handleLogout() {
     logout();
@@ -17,7 +17,7 @@ export default function Profile() {
   }
 
   function startEditing() {
-    setForm({ name: user?.name ?? '', income: user?.income ?? '', payDay: user?.payDay ?? '' });
+    setForm({ name: user?.name ?? '', income: user?.income ?? '', payDay: user?.payDay ?? '', aboutMe: user?.aboutMe ?? '' });
     setEditing(true);
   }
 
@@ -27,6 +27,7 @@ export default function Profile() {
       name: form.name.trim(),
       income: Number(form.income) || 0,
       payDay: Number(form.payDay) || 1,
+      aboutMe: form.aboutMe.trim(),
     });
     setEditing(false);
   }
@@ -63,6 +64,14 @@ export default function Profile() {
               onChange={(e) => setForm((f) => ({ ...f, payDay: e.target.value }))}
               className="rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)] px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)]"
             />
+            <textarea
+              rows={4}
+              maxLength={1000}
+              placeholder="Sobre mim e meus objetivos (o Copilot lê isso para te ajudar melhor)"
+              value={form.aboutMe}
+              onChange={(e) => setForm((f) => ({ ...f, aboutMe: e.target.value }))}
+              className="rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)] px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)] resize-none"
+            />
             <div className="flex gap-3">
               <Button type="submit">Salvar</Button>
               <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
@@ -76,6 +85,10 @@ export default function Profile() {
             <Row label="E-mail" value={user?.email} />
             <Row label="Renda mensal" value={formatCurrency(user?.income)} />
             <Row label="Dia do salário" value={`Dia ${user?.payDay}`} />
+            <div className="text-sm">
+              <p className="text-[var(--color-text-dim)] mb-1">Sobre mim e meus objetivos</p>
+              <p className="whitespace-pre-wrap">{user?.aboutMe || 'Nada escrito ainda — conte pro Copilot o que você quer alcançar.'}</p>
+            </div>
             <Button variant="outline" className="w-full" onClick={startEditing}>
               Editar perfil
             </Button>

@@ -1,10 +1,9 @@
-// Copilot client. The actual AI call happens server-side (see
-// server/services/aiService.js) so the API key never reaches the browser.
-// If the backend isn't running/configured, this falls back to a local
-// rule-based responder — for this project that's not just a fallback, it's
-// the everyday path (no paid API key wired up), so it pulls from the
-// user's real data and varies its phrasing instead of reading like a
-// canned demo.
+// Copilot client. The real AI call happens server-side (see
+// server/services/aiService.js): the server loads her data from Firestore
+// and asks Claude, so the API key never reaches the browser. If the server
+// is unreachable or the AI isn't configured, this falls back to a simple
+// keyword responder over the data already on screen, so the chat still
+// answers something.
 
 import { evaluatePurchase, monthlyGoalContribution } from './financeService';
 import { topExpenseCategory, categoryAnomalies } from './insightsService';
@@ -14,18 +13,19 @@ import { API_URL } from '../config/api';
 
 const GREETINGS = ['oi', 'ola', 'olá', 'bom dia', 'boa tarde', 'boa noite', 'eae', 'e ai', 'e aí'];
 
-export async function askCopilot({ message, context }) {
+export async function askCopilot({ message, history = [], context, getIdToken }) {
   try {
+    const token = await getIdToken();
     const res = await fetch(`${API_URL}/api/copilot`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, context }),
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ message, history: history.map(({ role, text }) => ({ role, text })) }),
     });
     if (!res.ok) throw new Error('backend unavailable');
     const data = await res.json();
-    return { reply: data.reply, source: 'backend' };
+    return { reply: data.reply, source: 'ai' };
   } catch {
-    return { reply: localFallback(message, context), source: 'demo' };
+    return { reply: localFallback(message, context), source: 'basic' };
   }
 }
 

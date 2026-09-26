@@ -2,7 +2,7 @@
 // and Forecast pages. Kept pure (no side effects) so it's easy to unit test
 // and reuse from the server for parity if needed later.
 
-import { nextSalaryDate, daysUntil } from '../utils/format';
+import { nextSalaryDate, daysUntil } from '../utils/format.js';
 
 export function totalBalance(accounts) {
   return accounts.reduce((sum, a) => sum + a.balance, 0);

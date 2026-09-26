@@ -10,4 +10,5 @@ export const USER_COLLECTIONS = [
   'userCategoryRules',
   'importBatches',
   'recurringPatterns',
+  'copilotMessages',
 ];
