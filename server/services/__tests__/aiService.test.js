@@ -127,3 +127,32 @@ describe('generateCopilotReply with an OpenAI-compatible provider (Groq)', () =>
     await expect(generateCopilotReply({ uid: 'u1', message: 'oi', history: [] })).rejects.toMatchObject({ status: 429 });
   });
 });
+
+describe('extractExpenseWithAi', () => {
+  beforeEach(() => {
+    vi.stubEnv('ANTHROPIC_API_KEY', '');
+    vi.stubEnv('LLM_API_KEY', 'gsk_test');
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('parses the JSON out of the model reply, even with stray text around it', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: 'aqui está:\n{"intent":"create","amount":45,"type":"expense","description":"iFood","date":"hoje","category":"Alimentação"}' } }],
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const { extractExpenseWithAi } = await import('../aiService.js');
+    const json = await extractExpenseWithAi('gastei 45 no ifood');
+    expect(json).toMatchObject({ intent: 'create', amount: 45, category: 'Alimentação' });
+    vi.unstubAllGlobals();
+  });
+
+  it('returns null instead of throwing when the reply has no JSON', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ choices: [{ message: { content: 'desculpa, não entendi' } }] }) }));
+    const { extractExpenseWithAi } = await import('../aiService.js');
+    expect(await extractExpenseWithAi('oi')).toBeNull();
+    vi.unstubAllGlobals();
+  });
+});

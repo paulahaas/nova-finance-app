@@ -8,6 +8,7 @@
 import { evaluatePurchase, monthlyGoalContribution } from './financeService';
 import { topExpenseCategory, categoryAnomalies } from './insightsService';
 import { formatCurrency } from '../utils/format';
+import { parseExpenseMessage } from './expenseParser';
 
 import { API_URL } from '../config/api';
 
@@ -26,6 +27,27 @@ export async function askCopilot({ message, history = [], context, getIdToken })
     return { reply: data.reply, source: 'ai' };
   } catch {
     return { reply: localFallback(message, context), source: 'basic' };
+  }
+}
+
+/**
+ * Asks the server to interpret a chat message as a transaction (create,
+ * correction or deletion of a recent one). Falls back to running the same
+ * deterministic parser locally if the server can't be reached, so this
+ * still works with the local data already loaded on screen.
+ */
+export async function parseExpense({ message, getIdToken, localOptions }) {
+  try {
+    const token = await getIdToken();
+    const res = await fetch(`${API_URL}/api/copilot/parse-expense`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ message }),
+    });
+    if (!res.ok) throw new Error('backend unavailable');
+    return res.json();
+  } catch {
+    return parseExpenseMessage(message, localOptions);
   }
 }
 

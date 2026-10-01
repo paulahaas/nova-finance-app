@@ -75,16 +75,19 @@ async function loadUserData(uid) {
 }
 
 async function askClaude({ system, dataBlock, messages }) {
+  // The data block (when present) is identical across messages of the same
+  // conversation, so it's cached and later turns read it at a fraction of
+  // the price. Callers with no per-user data (e.g. the expense extractor)
+  // pass an empty dataBlock — Anthropic rejects an empty cached text block,
+  // so that block is only added when there's something in it.
+  const systemBlocks = [{ type: 'text', text: system }];
+  if (dataBlock) systemBlocks.push({ type: 'text', text: dataBlock, cache_control: { type: 'ephemeral' } });
+
   const response = await getClient().messages.create({
     model: CLAUDE_MODEL,
     max_tokens: 8000,
     output_config: { effort: 'medium' },
-    // The data block is identical across messages of the same conversation,
-    // so it is cached and later turns read it at a fraction of the price.
-    system: [
-      { type: 'text', text: system },
-      { type: 'text', text: dataBlock, cache_control: { type: 'ephemeral' } },
-    ],
+    system: systemBlocks,
     messages,
   });
   return {
@@ -100,9 +103,7 @@ async function askOpenAiCompatible({ system, dataBlock, messages }) {
   const model = LLM_MODEL();
   const body = {
     model,
-    messages: [{ role: 'system', content: `${system}
-
-${dataBlock}` }, ...messages],
+    messages: [{ role: 'system', content: dataBlock ? `${system}\n\n${dataBlock}` : system }, ...messages],
     max_completion_tokens: 3000,
     temperature: 0.4,
   };
@@ -125,6 +126,35 @@ ${dataBlock}` }, ...messages],
   const json = await res.json();
   const choice = json.choices?.[0];
   return { text: choice?.message?.content ?? '', stopReason: choice?.finish_reason };
+}
+
+const EXTRACTION_SYSTEM_PROMPT = `Você extrai dados estruturados de uma mensagem sobre uma transação financeira, em português do Brasil. Responda APENAS com um JSON válido, sem nenhum texto antes ou depois, exatamente neste formato:
+{"intent":"create"|"delete"|"correct"|"none","description":string|null,"amount":number|null,"type":"expense"|"income"|null,"date":string|null,"installments":number|null,"category":string|null,"targetHint":string|null,"patchAmount":number|null,"patchCategory":string|null}
+
+Regras:
+- "create": ela está registrando um gasto ou uma entrada nova. "amount" é sempre um número positivo. "date" é "hoje", "ontem", "anteontem" ou uma data em AAAA-MM-DD; sem pista, use "hoje". "category" deve ser exatamente uma destas: Moradia, Alimentação, Transporte, Saúde, Educação, Entretenimento, Compras, Viagens, Assinaturas, Outros, Entrada.
+- "delete": ela quer apagar uma transação recente. "targetHint" é uma pista de qual (ex.: "uber"), ou null se ela quis dizer a mais recente.
+- "correct": ela quer corrigir o valor e/ou a categoria de uma transação recente. Preencha "targetHint" e "patchAmount" e/ou "patchCategory" (nesse caso "patchCategory" também deve ser uma das categorias listadas acima).
+- "none": a mensagem não é nenhuma dessas três coisas (ex.: é uma pergunta, ou conversa qualquer). Nesse caso todos os outros campos são null.
+Nunca invente um valor que não esteja na mensagem.`;
+
+/**
+ * Structured extraction for "gastei 45 no ifood"-style chat messages, used
+ * as the smarter fallback when src/services/expenseParser.js's regex parser
+ * can't make sense of the phrasing. Returns the raw parsed JSON (or null on
+ * any failure) — src/services/expenseParser.js's fromAiExtraction() is what
+ * validates and normalizes it, same as it does for the regex path.
+ */
+export async function extractExpenseWithAi(message) {
+  const ask = aiProvider() === 'anthropic' ? askClaude : askOpenAiCompatible;
+  const { text } = await ask({ system: EXTRACTION_SYSTEM_PROMPT, dataBlock: '', messages: [{ role: 'user', content: message }] });
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[0]);
+  } catch {
+    return null;
+  }
 }
 
 export async function generateCopilotReply({ uid, message, history }) {

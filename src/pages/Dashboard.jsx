@@ -1,11 +1,13 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, ChevronRight } from 'lucide-react';
+import { ShoppingBag, ChevronRight, Plus } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import Panel from '../components/Panel';
 import StatNumber from '../components/StatNumber';
 import ProgressBar from '../components/ProgressBar';
+import QuickExpenseEntry from '../components/QuickExpenseEntry';
 import { formatCurrency, formatDate, nextSalaryDate } from '../utils/format';
 import { pulseStatus } from '../services/financeService';
 import { primaryRecommendation } from '../services/insightsService';
@@ -31,6 +33,7 @@ export default function Dashboard() {
   const pulseStyle = PULSE_STYLES[pulse.level];
   const mainGoal = goals[0];
   const savings = computed.monthIncome - computed.monthExpenses;
+  const [showQuickEntry, setShowQuickEntry] = useState(false);
 
   return (
     // Mobile-first order (spec section 3): greeting → balance → available
@@ -152,6 +155,16 @@ export default function Dashboard() {
           </p>
         </Panel>
       )}
+
+      <button
+        onClick={() => setShowQuickEntry(true)}
+        aria-label="Registrar gasto"
+        className="fixed z-40 right-6 bottom-[calc(6rem+env(safe-area-inset-bottom))] md:bottom-8 w-14 h-14 rounded-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-bright)] text-white shadow-lg flex items-center justify-center transition-colors"
+      >
+        <Plus size={26} />
+      </button>
+
+      {showQuickEntry && <QuickExpenseEntry onClose={() => setShowQuickEntry(false)} />}
     </div>
   );
 }

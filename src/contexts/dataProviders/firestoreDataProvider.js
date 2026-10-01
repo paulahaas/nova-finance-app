@@ -50,7 +50,7 @@ export function useFirestoreDataProvider(uid, user) {
   const [banks, addBankDoc] = useUserCollection(uid, 'banks');
   const [accounts, addAccountDoc] = useUserCollection(uid, 'accounts');
   const [cards, addCardDoc] = useUserCollection(uid, 'cards');
-  const [transactions, addTransactionDoc] = useUserCollection(uid, 'transactions');
+  const [transactions, addTransactionDoc, updateTransactionDoc, removeTransactionDoc] = useUserCollection(uid, 'transactions');
   const [goals, addGoalDoc, updateGoalDoc] = useUserCollection(uid, 'goals');
   const [subscriptions, addSubscriptionDoc, , removeSubscriptionDoc] = useUserCollection(uid, 'subscriptions');
   const [userCategoryRules] = useUserCollection(uid, 'userCategoryRules');
@@ -71,8 +71,37 @@ export function useFirestoreDataProvider(uid, user) {
   function addCard(card) {
     return addCardDoc({ used: 0, currentInvoice: 0, nextInvoice: 0, ...card });
   }
-  function addTransaction(tx) {
-    return addTransactionDoc({ date: new Date().toISOString(), ...tx });
+  // "tênis 300 em 3x": `amount` is the FULL price, split evenly across
+  // `installmentsTotal` monthly transactions (standard BR card semantics —
+  // 3x de R$300 means 3 charges of R$100, one per invoice). A plain
+  // transaction is just the installmentsTotal=1 (or unset) case of this.
+  function addTransaction({ installmentsTotal, ...tx }) {
+    const n = Math.max(1, installmentsTotal || 1);
+    if (n === 1) return addTransactionDoc({ date: new Date().toISOString(), ...tx });
+
+    const baseDate = new Date(tx.date || Date.now());
+    const share = Math.round((tx.amount / n) * 100) / 100;
+    const groupId = `inst-${Date.now()}`;
+    return Promise.all(
+      Array.from({ length: n }, (_, i) => {
+        const date = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, baseDate.getDate());
+        return addTransactionDoc({
+          ...tx,
+          amount: share,
+          date: date.toISOString(),
+          description: `${tx.description} (${i + 1}/${n})`,
+          installmentGroupId: groupId,
+          installmentIndex: i + 1,
+          installmentsTotal: n,
+        });
+      })
+    );
+  }
+  function updateTransaction(id, patch) {
+    return updateTransactionDoc(id, patch);
+  }
+  function removeTransaction(id) {
+    return removeTransactionDoc(id);
   }
   function addGoal(goal) {
     return addGoalDoc({ saved: 0, ...goal });
@@ -148,6 +177,8 @@ export function useFirestoreDataProvider(uid, user) {
     addAccount,
     addCard,
     addTransaction,
+    updateTransaction,
+    removeTransaction,
     addGoal,
     contributeToGoal,
     addSubscription,

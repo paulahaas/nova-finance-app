@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
+import { Mic } from 'lucide-react';
+import clsx from 'clsx';
 import Panel from '../../components/Panel';
 import Button from '../../components/Button';
+import TransactionDraftCard from '../../components/TransactionDraftCard';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { askCopilot } from '../../services/aiService';
+import { useExpenseDraft } from '../../hooks/useExpenseDraft';
+import { useSpeechToText } from '../../hooks/useSpeechToText';
 
 const SUGGESTIONS = [
   'Posso comprar um notebook de 3000?',
@@ -16,10 +21,12 @@ const SUGGESTIONS = [
   'Me dá uma dica de economia',
 ];
 
-const WELCOME = 'Olá! Sou o Copilot do NOVA. Eu conheço suas transações, cartões, metas e assinaturas — pergunte qualquer coisa sobre seu dinheiro.';
+const WELCOME =
+  'Olá! Sou o Copilot do NOVA. Eu conheço suas transações, cartões, metas e assinaturas — pergunte qualquer coisa sobre seu dinheiro, ou me diga um gasto direto, tipo "gastei 45 no ifood".';
 
 export default function Copilot() {
   const { getIdToken } = useAuth();
+  const data = useData();
   const {
     computed,
     goals,
@@ -30,23 +37,29 @@ export default function Copilot() {
     copilotMessages,
     addCopilotMessage,
     clearCopilotMessages,
-  } = useData();
+  } = data;
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
+  const expense = useExpenseDraft({ getIdToken, data });
+  const voice = useSpeechToText();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [copilotMessages.length, sending]);
+  }, [copilotMessages.length, sending, expense.draft]);
 
   async function send(text) {
     const message = text.trim();
-    if (!message || sending) return;
-    const history = copilotMessages;
+    if (!message || sending || expense.busy) return;
     setInput('');
     setSending(true);
     try {
       await addCopilotMessage({ role: 'user', text: message });
+
+      const handledAsTransaction = await expense.interpret(message);
+      if (handledAsTransaction) return; // the draft card takes over below
+
+      const history = copilotMessages;
       const { reply, source } = await askCopilot({
         message,
         history,
@@ -68,6 +81,17 @@ export default function Copilot() {
     } finally {
       setSending(false);
     }
+  }
+
+  async function handleConfirmDraft() {
+    const summary = await expense.confirm();
+    if (summary) await addCopilotMessage({ role: 'assistant', text: summary });
+  }
+
+  async function handleCancelDraft() {
+    const wasUnresolved = expense.draft?.intent.endsWith('_unresolved');
+    expense.cancel();
+    if (!wasUnresolved) await addCopilotMessage({ role: 'assistant', text: 'Ok, não registrei nada.' });
   }
 
   async function handleClear() {
@@ -111,7 +135,18 @@ export default function Copilot() {
             </Panel>
           </div>
         ))}
-        {sending && <p className="text-sm text-[var(--color-text-dim)] animate-pulse-soft">Copilot está pensando...</p>}
+        {(sending || expense.busy) && !expense.draft && (
+          <p className="text-sm text-[var(--color-text-dim)] animate-pulse-soft">Copilot está pensando...</p>
+        )}
+        {expense.draft && (
+          <TransactionDraftCard
+            draft={expense.draft}
+            busy={expense.busy}
+            onConfirm={handleConfirmDraft}
+            onCancel={handleCancelDraft}
+            onEditTransaction={expense.editDraftTransaction}
+          />
+        )}
         <div ref={bottomRef} />
       </div>
 
@@ -139,10 +174,25 @@ export default function Copilot() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Pergunte qualquer coisa sobre seu dinheiro..."
+          placeholder="Pergunte algo ou registre um gasto..."
           className="flex-1 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] px-5 py-3 text-sm outline-none focus:border-[var(--color-accent)]"
         />
-        <Button type="submit" disabled={sending}>
+        {voice.supported && (
+          <button
+            type="button"
+            onClick={() => voice.start((transcript) => send(transcript))}
+            aria-label="Ditar por voz"
+            className={clsx(
+              'shrink-0 w-12 h-12 rounded-full border flex items-center justify-center transition-colors',
+              voice.listening
+                ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-accent)] animate-pulse-soft'
+                : 'border-[var(--color-border)] text-[var(--color-text-dim)]'
+            )}
+          >
+            <Mic size={18} />
+          </button>
+        )}
+        <Button type="submit" disabled={sending || expense.busy}>
           Enviar
         </Button>
       </form>
