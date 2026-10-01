@@ -33,7 +33,7 @@ vi.mock('../firebaseAdmin.js', () => ({
   },
 }));
 
-const { generateCopilotReply, sanitizeHistory } = await import('../aiService.js');
+const { generateCopilotReply, sanitizeHistory, generateMonthlyNarrative } = await import('../aiService.js');
 
 describe('sanitizeHistory', () => {
   it('keeps only user/assistant text, starts with a user turn and caps the length', () => {
@@ -153,6 +153,34 @@ describe('extractExpenseWithAi', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ choices: [{ message: { content: 'desculpa, não entendi' } }] }) }));
     const { extractExpenseWithAi } = await import('../aiService.js');
     expect(await extractExpenseWithAi('oi')).toBeNull();
+    vi.unstubAllGlobals();
+  });
+});
+
+describe('generateMonthlyNarrative', () => {
+  beforeEach(() => {
+    vi.stubEnv('ANTHROPIC_API_KEY', '');
+    vi.stubEnv('LLM_API_KEY', 'gsk_test');
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('sends the already-computed report as the user message and returns the trimmed text', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: '  Você guardou bem este mês.  ' } }] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const report = { month: '2026-09', income: 3000, expenses: 1000, netSavings: 2000 };
+    const text = await generateMonthlyNarrative(report);
+    expect(text).toBe('Você guardou bem este mês.');
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.messages[1]).toEqual({ role: 'user', content: JSON.stringify(report) });
+    vi.unstubAllGlobals();
+  });
+
+  it('returns null when the model replies with nothing', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ choices: [{ message: { content: '' } }] }) }));
+    expect(await generateMonthlyNarrative({ month: '2026-09' })).toBeNull();
     vi.unstubAllGlobals();
   });
 });

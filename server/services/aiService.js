@@ -157,6 +157,24 @@ export async function extractExpenseWithAi(message) {
   }
 }
 
+const MONTHLY_CLOSE_SYSTEM_PROMPT = `Você escreve um resumo curto (até 4 frases, sem markdown, sem título) do fechamento financeiro do mês de uma pessoa, em português do Brasil, a partir de um JSON com os números já calculados. Seja direta e honesta, sem ser dura: elogie o que foi bem, aponte com clareza o que vale cortar e cite os valores em reais que já estão no JSON. Nunca invente nenhum número que não esteja no JSON.`;
+
+/**
+ * Optional short narrative on top of the deterministic report built by
+ * src/services/monthlyCloseService.js. Every number already exists before
+ * this is called — the model only writes the sentence around them, so this
+ * can fail or be skipped (AI not configured) without losing the report.
+ */
+export async function generateMonthlyNarrative(report) {
+  const ask = aiProvider() === 'anthropic' ? askClaude : askOpenAiCompatible;
+  const { text } = await ask({
+    system: MONTHLY_CLOSE_SYSTEM_PROMPT,
+    dataBlock: '',
+    messages: [{ role: 'user', content: JSON.stringify(report) }],
+  });
+  return text.trim() || null;
+}
+
 export async function generateCopilotReply({ uid, message, history }) {
   const data = await loadUserData(uid);
   const dataBlock = `Dados da usuária (atualizados agora):

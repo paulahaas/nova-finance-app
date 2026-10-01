@@ -13,6 +13,7 @@ import {
   monthExpenses,
   monthIncome,
 } from '../../services/financeService';
+import { buildAlerts } from '../../services/alertsService';
 
 function useUserCollection(uid, name) {
   const [items, setItems] = useState([]);
@@ -58,10 +59,21 @@ export function useFirestoreDataProvider(uid, user) {
   const [recurringPatterns, , updateRecurringPatternDoc] = useUserCollection(uid, 'recurringPatterns');
   const [copilotMessageDocs, addCopilotMessageDoc, , removeCopilotMessageDoc] = useUserCollection(uid, 'copilotMessages');
   const [categoryBudgets, , , removeCategoryBudgetDoc] = useUserCollection(uid, 'categoryBudgets');
+  const [monthlyReportDocs] = useUserCollection(uid, 'monthlyReports');
 
   const categories = CATEGORIES;
-  const alerts = []; // real alert generation is a future backend job — see README roadmap
-  const achievements = []; // same for gamification — no engine wired up yet
+  const achievements = []; // gamification — no engine wired up yet, see plan Etapa 7
+
+  // In-app-only (no push, decided explicitly): budget warnings, a card
+  // invoice closing high, small/forgettable subscriptions, a weekly recap.
+  const alerts = useMemo(
+    () => buildAlerts({ cards, subscriptions, categoryBudgets, transactions }),
+    [cards, subscriptions, categoryBudgets, transactions]
+  );
+  const monthlyReports = useMemo(
+    () => [...monthlyReportDocs].sort((a, b) => (a.month < b.month ? 1 : -1)),
+    [monthlyReportDocs]
+  );
 
   function addBank(bank) {
     return addBankDoc(bank);
@@ -182,6 +194,7 @@ export function useFirestoreDataProvider(uid, user) {
     recurringPatterns,
     copilotMessages,
     categoryBudgets,
+    monthlyReports,
     alerts,
     achievements,
     computed,

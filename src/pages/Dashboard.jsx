@@ -148,12 +148,14 @@ export default function Dashboard() {
       </Link>
 
       {alerts[0] && (
-        <Panel>
-          <p className="font-medium mb-2">Alertas</p>
-          <p className="text-sm text-[var(--color-text-dim)]">
-            {alerts[0].icon} {alerts[0].message}
-          </p>
-        </Panel>
+        <Link to="/app/alerts" className="block">
+          <Panel className="hover:border-[var(--color-accent)] transition-colors">
+            <p className="font-medium mb-2">Alertas{alerts.length > 1 ? ` (${alerts.length})` : ''}</p>
+            <p className="text-sm text-[var(--color-text-dim)]">
+              {alerts[0].icon} {alerts[0].message}
+            </p>
+          </Panel>
+        </Link>
       )}
 
       <button

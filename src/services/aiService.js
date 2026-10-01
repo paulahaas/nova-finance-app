@@ -51,6 +51,23 @@ export async function parseExpense({ message, getIdToken, localOptions }) {
   }
 }
 
+/**
+ * Asks the server to generate (and persist) this month's closing report —
+ * category totals vs trailing average, concrete cut suggestions, forgotten
+ * subscriptions, a suggested budget for next month, and goal pace. No local
+ * fallback: without the backend there's nothing sensible to show, so the
+ * caller surfaces the error instead.
+ */
+export async function generateMonthlyClose({ getIdToken }) {
+  const token = await getIdToken();
+  const res = await fetch(`${API_URL}/api/reports/monthly-close`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  });
+  if (!res.ok) throw new Error('Não consegui gerar o fechamento do mês.');
+  return res.json();
+}
+
 function pick(options) {
   return options[Math.floor(Math.random() * options.length)];
 }

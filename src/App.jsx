@@ -22,6 +22,7 @@ import ImportHistory from './pages/imports/ImportHistory';
 import Copilot from './pages/copilot/Copilot';
 import CanIBuy from './pages/copilot/CanIBuy';
 import Insights from './pages/reports/Insights';
+import MonthlyClose from './pages/reports/MonthlyClose';
 import Forecast from './pages/reports/Forecast';
 import Reports from './pages/reports/Reports';
 import Alerts from './pages/Alerts';
@@ -61,6 +62,7 @@ export default function App() {
               <Route path="/app/copilot" element={<Copilot />} />
               <Route path="/app/can-i-buy" element={<CanIBuy />} />
               <Route path="/app/insights" element={<Insights />} />
+              <Route path="/app/reports/monthly-close" element={<MonthlyClose />} />
               <Route path="/app/forecast" element={<Forecast />} />
               <Route path="/app/reports" element={<Reports />} />
               <Route path="/app/alerts" element={<Alerts />} />

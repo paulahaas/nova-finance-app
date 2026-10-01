@@ -4,6 +4,7 @@ import cors from 'cors';
 import copilotRouter from './routes/copilot.js';
 import openFinanceRouter from './routes/openFinance.js';
 import statementsRouter from './routes/statements.js';
+import reportsRouter from './routes/reports.js';
 import { aiProvider } from './services/aiService.js';
 import { isFirebaseAdminConfigured } from './services/firebaseAdmin.js';
 import { isOpenFinanceConfigured } from './services/openFinanceService.js';
@@ -34,5 +35,6 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/copilot', copilotRouter);
 app.use('/api/open-finance', openFinanceRouter);
 app.use('/api/statements', statementsRouter);
+app.use('/api/reports', reportsRouter);
 
 export default app;

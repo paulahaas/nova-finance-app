@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Lightbulb, CreditCard, Repeat, User, Settings as SettingsIcon, BarChart3, ChevronRight, MessageCircle, Upload, Wallet } from 'lucide-react';
+import { Lightbulb, CreditCard, Repeat, User, Settings as SettingsIcon, BarChart3, ChevronRight, MessageCircle, Upload, Wallet, CalendarCheck, Bell } from 'lucide-react';
 import Panel from '../components/Panel';
 
 const ITEMS = [
   { to: '/app/insights', label: 'Insights', icon: Lightbulb },
   { to: '/app/reports', label: 'Análises', icon: BarChart3 },
+  { to: '/app/reports/monthly-close', label: 'Fechamento do mês', icon: CalendarCheck },
+  { to: '/app/alerts', label: 'Alertas', icon: Bell },
   { to: '/app/cards', label: 'Cartões', icon: CreditCard },
   { to: '/app/subscriptions', label: 'Assinaturas', icon: Repeat },
   { to: '/app/budgets', label: 'Orçamento', icon: Wallet },
