@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ChevronRight, Plane } from 'lucide-react';
 import Panel from '../../components/Panel';
 import Button from '../../components/Button';
 import ProgressBar from '../../components/ProgressBar';
@@ -7,10 +8,26 @@ import { formatCurrency, formatDateLong } from '../../utils/format';
 
 export default function Goals() {
   const { goals } = useData();
+  const priorityGoal = goals.find((g) => g.priority);
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Minhas metas</h1>
+
+      <Link to="/app/goals/travel" className="block">
+        <Panel className="flex items-center gap-4 hover:border-[var(--color-accent)] transition-colors shimmer-border">
+          <span className="flex items-center justify-center w-11 h-11 rounded-full bg-[var(--color-accent-soft)] shrink-0">
+            <Plane size={20} className="text-[var(--color-accent)]" />
+          </span>
+          <div className="flex-1">
+            <p className="font-medium">{priorityGoal ? `⭐ ${priorityGoal.name}` : 'Criar meta prioritária: Intercâmbio'}</p>
+            <p className="text-sm text-[var(--color-text-dim)]">
+              {priorityGoal ? 'Fases, países e checklist do intercâmbio.' : 'Fases, comparação de países e checklist com prazos.'}
+            </p>
+          </div>
+          <ChevronRight size={18} className="text-[var(--color-text-faint)] shrink-0" />
+        </Panel>
+      </Link>
 
       <div className="space-y-4">
         {goals.map((g) => {

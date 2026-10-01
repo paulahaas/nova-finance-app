@@ -33,7 +33,7 @@ vi.mock('../firebaseAdmin.js', () => ({
   },
 }));
 
-const { generateCopilotReply, sanitizeHistory, generateMonthlyNarrative } = await import('../aiService.js');
+const { generateCopilotReply, sanitizeHistory, generateMonthlyNarrative, estimateCountryWithAi } = await import('../aiService.js');
 
 describe('sanitizeHistory', () => {
   it('keeps only user/assistant text, starts with a user turn and caps the length', () => {
@@ -181,6 +181,42 @@ describe('generateMonthlyNarrative', () => {
   it('returns null when the model replies with nothing', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ choices: [{ message: { content: '' } }] }) }));
     expect(await generateMonthlyNarrative({ month: '2026-09' })).toBeNull();
+    vi.unstubAllGlobals();
+  });
+});
+
+describe('estimateCountryWithAi', () => {
+  beforeEach(() => {
+    vi.stubEnv('ANTHROPIC_API_KEY', '');
+    vi.stubEnv('LLM_API_KEY', 'gsk_test');
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('parses the estimate JSON and sends the country name as the user message', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [
+          {
+            message: {
+              content:
+                '{"currencyCode":"EUR","costToArriveBRL":15000,"monthlyEarningLocal":1400,"monthlySavingLocal":300,"notes":"Estimativa aproximada."}',
+            },
+          },
+        ],
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const estimate = await estimateCountryWithAi('Irlanda');
+    expect(estimate).toMatchObject({ currencyCode: 'EUR', costToArriveBRL: 15000 });
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.messages[1]).toEqual({ role: 'user', content: 'País: Irlanda' });
+    vi.unstubAllGlobals();
+  });
+
+  it('returns null instead of throwing when the reply has no JSON', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ choices: [{ message: { content: 'não sei' } }] }) }));
+    expect(await estimateCountryWithAi('Narnia')).toBeNull();
     vi.unstubAllGlobals();
   });
 });

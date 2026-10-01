@@ -15,6 +15,7 @@ import Money from './pages/money/Money';
 import More from './pages/More';
 import Goals from './pages/goals/Goals';
 import GoalNew from './pages/goals/GoalNew';
+import TravelGoal from './pages/goals/TravelGoal';
 import Subscriptions from './pages/Subscriptions';
 import Budgets from './pages/budgets/Budgets';
 import ImportStatement from './pages/imports/ImportStatement';
@@ -55,6 +56,7 @@ export default function App() {
               <Route path="/app/more" element={<More />} />
               <Route path="/app/goals" element={<Goals />} />
               <Route path="/app/goals/new" element={<GoalNew />} />
+              <Route path="/app/goals/travel" element={<TravelGoal />} />
               <Route path="/app/subscriptions" element={<Subscriptions />} />
               <Route path="/app/budgets" element={<Budgets />} />
               <Route path="/app/imports" element={<ImportHistory />} />

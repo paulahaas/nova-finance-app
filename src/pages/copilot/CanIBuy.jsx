@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Panel from '../../components/Panel';
 import Button from '../../components/Button';
 import { useData } from '../../contexts/DataContext';
-import { evaluatePurchase } from '../../services/financeService';
+import { evaluatePurchase, primaryGoal } from '../../services/financeService';
 import { formatCurrency } from '../../utils/format';
 
 const VERDICT_UI = {
@@ -16,6 +16,7 @@ export default function CanIBuy() {
   const [item, setItem] = useState('');
   const [price, setPrice] = useState('');
   const [result, setResult] = useState(null);
+  const goal = primaryGoal(goals);
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -67,9 +68,9 @@ export default function CanIBuy() {
             {VERDICT_UI[result.verdict].emoji} {VERDICT_UI[result.verdict].label}
           </p>
           <p className="text-[var(--color-text-dim)] mb-4">{result.message}</p>
-          {goals[0] && result.goalDelayDays > 0 && (
+          {goal && result.goalDelayDays > 0 && (
             <p className="text-sm text-[var(--color-text-dim)]">
-              Sua meta "{goals[0].name}" será atrasada em aproximadamente {result.goalDelayDays} dias.
+              Sua meta "{goal.name}" será atrasada em aproximadamente {result.goalDelayDays} dias.
             </p>
           )}
           <p className="text-sm text-[var(--color-text-dim)] mt-2">

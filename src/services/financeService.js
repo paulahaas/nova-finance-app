@@ -72,6 +72,12 @@ export function monthsUntil(dateStr) {
   );
 }
 
+/** The goal marked as priority (e.g. "Intercâmbio 2027"), or goals[0] as a
+ * fallback while no goal has been marked yet. */
+export function primaryGoal(goals) {
+  return goals.find((g) => g.priority) ?? goals[0] ?? null;
+}
+
 export function daysUntilNextSalary(payDay) {
   return daysUntil(nextSalaryDate(payDay));
 }
@@ -101,10 +107,10 @@ export function evaluatePurchase({ price, available, monthlyIncome, goals }) {
     message = 'Essa compra reduzirá bastante sua capacidade de economizar este mês.';
   }
 
-  const primaryGoal = goals[0];
+  const goal = primaryGoal(goals);
   let goalDelayDays = 0;
-  if (primaryGoal) {
-    const monthlyRate = monthlyGoalContribution(primaryGoal) || 1;
+  if (goal) {
+    const monthlyRate = monthlyGoalContribution(goal) || 1;
     goalDelayDays = Math.round((price / monthlyRate) * 30);
   }
 

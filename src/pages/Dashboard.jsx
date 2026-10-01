@@ -8,9 +8,11 @@ import Panel from '../components/Panel';
 import StatNumber from '../components/StatNumber';
 import ProgressBar from '../components/ProgressBar';
 import QuickExpenseEntry from '../components/QuickExpenseEntry';
-import { formatCurrency, formatDate, nextSalaryDate } from '../utils/format';
-import { pulseStatus } from '../services/financeService';
+import { formatCurrency, formatDate, formatDateLong, nextSalaryDate } from '../utils/format';
+import { pulseStatus, primaryGoal } from '../services/financeService';
 import { primaryRecommendation } from '../services/insightsService';
+import { useExchangeRate } from '../hooks/useExchangeRate';
+import { travelGoalTotal, travelGoalPhase, travelGoalOnTrack, travelGoalProjectedDate, selectedCountry } from '../services/travelGoalService';
 
 function greeting() {
   const h = new Date().getHours();
@@ -31,7 +33,14 @@ export default function Dashboard() {
   const salary = nextSalaryDate(user?.payDay ?? 5);
   const pulse = pulseStatus({ available: computed.available, monthlyIncome: computed.monthIncome });
   const pulseStyle = PULSE_STYLES[pulse.level];
-  const mainGoal = goals[0];
+  const mainGoal = primaryGoal(goals);
+  const isTravelGoal = mainGoal && Array.isArray(mainGoal.countries);
+  const mainGoalTotal = isTravelGoal ? travelGoalTotal(mainGoal) : mainGoal?.target;
+  const phase = isTravelGoal ? travelGoalPhase(mainGoal) : null;
+  const onTrack = isTravelGoal ? travelGoalOnTrack(mainGoal) : null;
+  const projected = isTravelGoal ? travelGoalProjectedDate(mainGoal) : null;
+  const destinationCountry = isTravelGoal ? selectedCountry(mainGoal) : null;
+  const { rate: destinationRate } = useExchangeRate('BRL', destinationCountry?.currencyCode);
   const savings = computed.monthIncome - computed.monthExpenses;
   const [showQuickEntry, setShowQuickEntry] = useState(false);
 
@@ -79,25 +88,44 @@ export default function Dashboard() {
       </Panel>
 
       {mainGoal && (
-        <Link to="/app/goals" className="block">
+        <Link to={isTravelGoal ? '/app/goals/travel' : '/app/goals'} className="block">
           <Panel>
             <div className="flex items-center justify-between mb-3 gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 {mainGoal.image ? (
                   <img src={mainGoal.image} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0" />
                 ) : (
-                  <span className="text-xl shrink-0">{mainGoal.emoji}</span>
+                  <span className="text-xl shrink-0">{mainGoal.priority ? '⭐' : mainGoal.emoji}</span>
                 )}
                 <p className="font-medium truncate">{mainGoal.name}</p>
               </div>
               <p className="text-sm text-[var(--color-text-dim)] shrink-0">
-                {Math.round((mainGoal.saved / mainGoal.target) * 100)}%
+                {Math.round(((mainGoal.saved || 0) / mainGoalTotal) * 100)}%
               </p>
             </div>
-            <ProgressBar value={mainGoal.saved} max={mainGoal.target} animateOnMount glowNearComplete />
+            <ProgressBar value={mainGoal.saved || 0} max={mainGoalTotal} animateOnMount glowNearComplete />
             <p className="text-sm text-[var(--color-text-dim)] mt-3">
-              {formatCurrency(mainGoal.saved)} de {formatCurrency(mainGoal.target)}
+              {formatCurrency(mainGoal.saved || 0)} de {formatCurrency(mainGoalTotal)}
+              {destinationCountry && destinationRate != null && (
+                <> (~{(mainGoalTotal * destinationRate).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} {destinationCountry.currencyCode})</>
+              )}
             </p>
+            {isTravelGoal && (
+              <div className="flex items-center justify-between mt-3 text-xs">
+                <span
+                  className={
+                    onTrack === false
+                      ? 'text-[var(--color-negative)]'
+                      : onTrack === true
+                        ? 'text-[var(--color-positive)]'
+                        : 'text-[var(--color-text-dim)]'
+                  }
+                >
+                  {onTrack === false ? '⚠️ atrás do ritmo' : onTrack === true ? '✓ no ritmo' : phase?.label ?? ''}
+                </span>
+                {projected && <span className="text-[var(--color-text-dim)]">Previsão: {formatDateLong(projected)}</span>}
+              </div>
+            )}
           </Panel>
         </Link>
       )}

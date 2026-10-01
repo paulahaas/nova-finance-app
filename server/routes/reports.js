@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { adminDb } from '../services/firebaseAdmin.js';
-import { generateMonthlyNarrative, isAiConfigured } from '../services/aiService.js';
+import { generateMonthlyNarrative, estimateCountryWithAi, isAiConfigured } from '../services/aiService.js';
 import { buildMonthlyClose, monthKeyLabel } from '../../src/services/monthlyCloseService.js';
 
 const router = Router();
@@ -43,6 +43,28 @@ router.post('/monthly-close', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('[reports] monthly-close failed:', err.message);
     res.status(500).json({ error: 'Não consegui gerar o fechamento do mês.' });
+  }
+});
+
+// A rough, clearly-labeled starting point for the "Intercâmbio" country
+// comparison tool — she edits every field before saving, see
+// src/pages/goals/TravelGoal.jsx.
+router.post('/country-estimate', requireAuth, async (req, res) => {
+  const { country } = req.body ?? {};
+  if (!country || typeof country !== 'string' || !country.trim()) {
+    return res.status(400).json({ error: 'country is required' });
+  }
+  if (!isAiConfigured()) {
+    return res.status(503).json({ error: 'AI backend not configured' });
+  }
+
+  try {
+    const estimate = await estimateCountryWithAi(country.trim());
+    if (!estimate) return res.status(502).json({ error: 'Não consegui estimar esse país.' });
+    res.json(estimate);
+  } catch (err) {
+    console.error('[reports] country-estimate failed:', err.message);
+    res.status(502).json({ error: 'Não consegui estimar esse país.' });
   }
 });
 

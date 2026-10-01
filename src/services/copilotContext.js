@@ -97,11 +97,14 @@ export function buildCopilotContext(data, now = new Date()) {
     }`,
     `## Metas\n${
       goals.length
-        ? goals
-            .map(
-              (g) =>
-                `- ${g.name}: guardado ${brl(g.saved)} de ${brl(g.target)}, prazo ${day(g.deadline)}${g.monthlyContribution ? `, plano de guardar ${brl(g.monthlyContribution)} por mês` : ''}`
-            )
+        ? [...goals]
+            .sort((a, b) => (b.priority ? 1 : 0) - (a.priority ? 1 : 0))
+            .map((g) => {
+              const total = (g.phase1Target || 0) + (g.phase2Target || 0) || g.target;
+              const phase = g.phase1Target && g.saved < g.phase1Target ? ' (fase 1: ida e sustento)' : g.phase1Target ? ' (fase 2: trazer de volta)' : '';
+              const country = g.countries?.find((c) => c.id === g.selectedCountryId);
+              return `- ${g.priority ? '⭐ PRIORIDADE — ' : ''}${g.name}${phase}: guardado ${brl(g.saved)} de ${brl(total)}, prazo ${day(g.deadline)}${g.monthlyContribution ? `, plano de guardar ${brl(g.monthlyContribution)} por mês` : ''}${country ? `, destino escolhido: ${country.name}` : ''}`;
+            })
             .join('\n')
         : '(nenhuma meta cadastrada)'
     }`

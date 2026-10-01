@@ -5,7 +5,7 @@
 // keyword responder over the data already on screen, so the chat still
 // answers something.
 
-import { evaluatePurchase, monthlyGoalContribution } from './financeService';
+import { evaluatePurchase, monthlyGoalContribution, primaryGoal } from './financeService';
 import { topExpenseCategory, categoryAnomalies } from './insightsService';
 import { formatCurrency } from '../utils/format';
 import { parseExpenseMessage } from './expenseParser';
@@ -65,6 +65,22 @@ export async function generateMonthlyClose({ getIdToken }) {
     headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
   });
   if (!res.ok) throw new Error('Não consegui gerar o fechamento do mês.');
+  return res.json();
+}
+
+/**
+ * A rough, AI-generated starting point for a country in the "Intercâmbio"
+ * comparison tool — currency, cost to arrive, and earning/saving potential.
+ * Always shown as an editable estimate, never saved as-is.
+ */
+export async function estimateCountry({ country, getIdToken }) {
+  const token = await getIdToken();
+  const res = await fetch(`${API_URL}/api/reports/country-estimate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ country }),
+  });
+  if (!res.ok) throw new Error('Não consegui estimar esse país.');
   return res.json();
 }
 
@@ -141,14 +157,14 @@ function localFallback(message, context) {
   }
 
   if (q.includes('quanto preciso guardar') || q.includes('quanto guardar') || q.includes('quanto tenho que guardar')) {
-    const goal = goals[0];
+    const goal = primaryGoal(goals);
     if (!goal) return 'Você ainda não tem metas ativas. Que tal criar uma?';
     const monthly = monthlyGoalContribution(goal);
     return `Para atingir "${goal.name}" no prazo, guarde cerca de ${formatCurrency(monthly)} por mês.`;
   }
 
   if (q.includes('quando atingirei') || q.includes('quando bato') || q.includes('minha meta')) {
-    const goal = goals[0];
+    const goal = primaryGoal(goals);
     if (!goal) return 'Você ainda não tem metas ativas.';
     return `No ritmo atual, você deve atingir "${goal.name}" perto do prazo definido (${new Date(
       goal.deadline

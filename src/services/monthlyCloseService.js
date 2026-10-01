@@ -7,7 +7,7 @@
 // (see server/routes/reports.js), but every number here stands on its own.
 
 import { categorySpendThisMonth, suggestMonthlyBudget } from './budgetService.js';
-import { monthlyGoalContribution } from './financeService.js';
+import { monthlyGoalContribution, primaryGoal } from './financeService.js';
 import { CATEGORIES } from '../config/categories.js';
 
 function isSameMonth(date, year, month) {
@@ -67,15 +67,13 @@ export function buildMonthlyClose({ transactions = [], subscriptions = [], goals
       return acc;
     }, {});
 
-  // Primary goal: goals[0] until a priority flag exists (see evaluatePurchase
-  // in financeService.js, which has the same limitation today).
-  const primaryGoal = goals[0] ?? null;
+  const goal = primaryGoal(goals);
   let goalPace = null;
-  if (primaryGoal) {
-    const plannedMonthly = monthlyGoalContribution(primaryGoal);
+  if (goal) {
+    const plannedMonthly = monthlyGoalContribution(goal);
     const actualContribution = Math.max(0, netSavings);
     const aheadDays = plannedMonthly > 0 ? Math.round(((actualContribution - plannedMonthly) / plannedMonthly) * 30) : 0;
-    goalPace = { goalName: primaryGoal.name, plannedMonthly, actualContribution, aheadDays };
+    goalPace = { goalName: goal.name, plannedMonthly, actualContribution, aheadDays };
   }
 
   return {

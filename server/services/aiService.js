@@ -175,6 +175,28 @@ export async function generateMonthlyNarrative(report) {
   return text.trim() || null;
 }
 
+const COUNTRY_ESTIMATE_SYSTEM_PROMPT = `Você ajuda a estimar, de forma aproximada, o custo para uma pessoa brasileira se mudar temporariamente para trabalhar em um país, e o potencial de ganho/economia mensal lá — para planejamento pessoal, não é aconselhamento financeiro nem dado oficial. Responda APENAS com um JSON válido, sem texto antes ou depois, exatamente neste formato:
+{"currencyCode":string,"costToArriveBRL":number,"monthlyEarningLocal":number,"monthlySavingLocal":number,"notes":string}
+
+"currencyCode" é o código ISO de 3 letras da moeda do país (ex.: USD, EUR, GBP, CAD, AUD). "costToArriveBRL" é uma estimativa grosseira em reais do custo inicial (passagem, visto, primeiros meses) para uma pessoa só. "monthlyEarningLocal" e "monthlySavingLocal" são estimativas mensais na moeda local para um trabalho de entrada comum (hospitalidade, estágio, trabalho temporário). "notes" deve deixar claro, em até 2 frases, que são números aproximados e que ela deve confirmar com fontes oficiais antes de decidir.`;
+
+/**
+ * A rough, clearly-labeled-as-estimate starting point for the country
+ * comparison tool — she edits every field before saving, nothing here is
+ * trusted as fact (see src/pages/goals/TravelGoal.jsx).
+ */
+export async function estimateCountryWithAi(country) {
+  const ask = aiProvider() === 'anthropic' ? askClaude : askOpenAiCompatible;
+  const { text } = await ask({ system: COUNTRY_ESTIMATE_SYSTEM_PROMPT, dataBlock: '', messages: [{ role: 'user', content: `País: ${country}` }] });
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[0]);
+  } catch {
+    return null;
+  }
+}
+
 export async function generateCopilotReply({ uid, message, history }) {
   const data = await loadUserData(uid);
   const dataBlock = `Dados da usuária (atualizados agora):

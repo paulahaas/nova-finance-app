@@ -12,8 +12,10 @@ import {
   daysUntilNextSalary,
   monthExpenses,
   monthIncome,
+  primaryGoal,
 } from '../../services/financeService';
 import { buildAlerts } from '../../services/alertsService';
+import { buildAchievements } from '../../services/achievementsService';
 
 function useUserCollection(uid, name) {
   const [items, setItems] = useState([]);
@@ -62,7 +64,6 @@ export function useFirestoreDataProvider(uid, user) {
   const [monthlyReportDocs] = useUserCollection(uid, 'monthlyReports');
 
   const categories = CATEGORIES;
-  const achievements = []; // gamification — no engine wired up yet, see plan Etapa 7
 
   // In-app-only (no push, decided explicitly): budget warnings, a card
   // invoice closing high, small/forgettable subscriptions, a weekly recap.
@@ -73,6 +74,12 @@ export function useFirestoreDataProvider(uid, user) {
   const monthlyReports = useMemo(
     () => [...monthlyReportDocs].sort((a, b) => (a.month < b.month ? 1 : -1)),
     [monthlyReportDocs]
+  );
+  // First real achievements in the app (no broader gamification engine
+  // exists yet) — tied to the priority goal, see achievementsService.js.
+  const achievements = useMemo(
+    () => buildAchievements({ goal: primaryGoal(goals), monthlyReports }),
+    [goals, monthlyReports]
   );
 
   function addBank(bank) {
@@ -123,6 +130,16 @@ export function useFirestoreDataProvider(uid, user) {
     const goal = goals.find((g) => g.id === goalId);
     if (!goal) return Promise.resolve();
     return updateGoalDoc(goalId, { saved: goal.saved + amount });
+  }
+  function updateGoal(goalId, patch) {
+    return updateGoalDoc(goalId, patch);
+  }
+  // Only one goal can be "priority" (today: Intercâmbio 2027) — unsets it
+  // on every other goal so evaluatePurchase()/the Copilot/the Dashboard
+  // pin always agree on a single one.
+  function setPriorityGoal(goalId) {
+    const toUpdate = goals.filter((g) => g.id === goalId || g.priority);
+    return Promise.all(toUpdate.map((g) => updateGoalDoc(g.id, { priority: g.id === goalId })));
   }
   function addSubscription(sub) {
     return addSubscriptionDoc(sub);
@@ -205,6 +222,8 @@ export function useFirestoreDataProvider(uid, user) {
     updateTransaction,
     removeTransaction,
     addGoal,
+    updateGoal,
+    setPriorityGoal,
     contributeToGoal,
     addSubscription,
     removeSubscription,
