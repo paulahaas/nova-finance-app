@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 
-export default function ProgressBar({ value, max = 100, accent = true, height = 8, animateOnMount = false, glowNearComplete = false }) {
+const TONES = {
+  accent: { fill: 'linear-gradient(90deg, var(--color-accent-dim), var(--color-accent))', glow: 'var(--color-accent)' },
+  warning: { fill: 'var(--color-warning)', glow: 'var(--color-warning)' },
+  negative: { fill: 'var(--color-negative)', glow: 'var(--color-negative)' },
+};
+
+// `tone` ('accent'|'warning'|'negative') picks the fill color directly —
+// used for budget bars that need to turn amber/red near or past the limit,
+// independent of the near-complete glow. `accent` (boolean) is kept for
+// existing callers that only cared about the two-color case.
+export default function ProgressBar({ value, max = 100, accent = true, tone, height = 8, animateOnMount = false, glowNearComplete = false }) {
   const pct = Math.min(100, Math.max(0, (value / max) * 100));
   const [displayPct, setDisplayPct] = useState(animateOnMount ? 0 : pct);
   const barRef = useRef(null);
@@ -32,6 +42,7 @@ export default function ProgressBar({ value, max = 100, accent = true, height = 
   }, [pct, animateOnMount]);
 
   const isGlowing = glowNearComplete && pct >= 90;
+  const resolvedTone = tone ? TONES[tone] : null;
 
   return (
     <div
@@ -43,10 +54,8 @@ export default function ProgressBar({ value, max = 100, accent = true, height = 
         className={isGlowing ? 'h-full rounded-full transition-all duration-700 ease-out animate-pulse-soft' : 'h-full rounded-full transition-all duration-700 ease-out'}
         style={{
           width: `${displayPct}%`,
-          background: accent
-            ? 'linear-gradient(90deg, var(--color-accent-dim), var(--color-accent))'
-            : 'var(--color-text-dim)',
-          boxShadow: isGlowing ? '0 0 12px var(--color-accent)' : 'none',
+          background: resolvedTone ? resolvedTone.fill : accent ? TONES.accent.fill : 'var(--color-text-dim)',
+          boxShadow: isGlowing ? `0 0 12px ${resolvedTone ? resolvedTone.glow : 'var(--color-accent)'}` : 'none',
         }}
       />
     </div>

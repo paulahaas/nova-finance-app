@@ -16,6 +16,7 @@ import More from './pages/More';
 import Goals from './pages/goals/Goals';
 import GoalNew from './pages/goals/GoalNew';
 import Subscriptions from './pages/Subscriptions';
+import Budgets from './pages/budgets/Budgets';
 import ImportStatement from './pages/imports/ImportStatement';
 import ImportHistory from './pages/imports/ImportHistory';
 import Copilot from './pages/copilot/Copilot';
@@ -54,6 +55,7 @@ export default function App() {
               <Route path="/app/goals" element={<Goals />} />
               <Route path="/app/goals/new" element={<GoalNew />} />
               <Route path="/app/subscriptions" element={<Subscriptions />} />
+              <Route path="/app/budgets" element={<Budgets />} />
               <Route path="/app/imports" element={<ImportHistory />} />
               <Route path="/app/imports/new" element={<ImportStatement />} />
               <Route path="/app/copilot" element={<Copilot />} />

@@ -3,7 +3,7 @@
 // firestore.rules: only the owner's UID can read or write them.
 
 import { useEffect, useMemo, useState } from 'react';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { CATEGORIES } from '../../config/categories';
 import {
@@ -57,6 +57,7 @@ export function useFirestoreDataProvider(uid, user) {
   const [importBatches] = useUserCollection(uid, 'importBatches');
   const [recurringPatterns, , updateRecurringPatternDoc] = useUserCollection(uid, 'recurringPatterns');
   const [copilotMessageDocs, addCopilotMessageDoc, , removeCopilotMessageDoc] = useUserCollection(uid, 'copilotMessages');
+  const [categoryBudgets, , , removeCategoryBudgetDoc] = useUserCollection(uid, 'categoryBudgets');
 
   const categories = CATEGORIES;
   const alerts = []; // real alert generation is a future backend job — see README roadmap
@@ -145,6 +146,16 @@ export function useFirestoreDataProvider(uid, user) {
     return Promise.all(copilotMessageDocs.map((m) => removeCopilotMessageDoc(m.id)));
   }
 
+  // One doc per category, the category name as its own ID — setDoc(merge)
+  // upserts instead of piling up duplicates the way addDoc would.
+  function setCategoryBudget(category, monthlyLimit) {
+    if (!uid || !db) return Promise.resolve();
+    return setDoc(doc(db, 'users', uid, 'categoryBudgets', category), { category, monthlyLimit }, { merge: true });
+  }
+  function removeCategoryBudget(category) {
+    return removeCategoryBudgetDoc(category);
+  }
+
   const computed = useMemo(() => {
     const available = availableMoney({ accounts, cards, subscriptions, goals });
     const payDay = user?.payDay ?? 5;
@@ -170,6 +181,7 @@ export function useFirestoreDataProvider(uid, user) {
     importBatches,
     recurringPatterns,
     copilotMessages,
+    categoryBudgets,
     alerts,
     achievements,
     computed,
@@ -187,6 +199,8 @@ export function useFirestoreDataProvider(uid, user) {
     dismissRecurringPattern,
     addCopilotMessage,
     clearCopilotMessages,
+    setCategoryBudget,
+    removeCategoryBudget,
     setCategories: () => {}, // categories aren't user-editable yet (section 19: "futuramente")
   };
 }

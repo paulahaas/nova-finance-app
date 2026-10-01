@@ -11,4 +11,5 @@ export const USER_COLLECTIONS = [
   'importBatches',
   'recurringPatterns',
   'copilotMessages',
+  'categoryBudgets',
 ];

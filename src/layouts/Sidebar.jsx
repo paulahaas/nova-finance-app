@@ -10,6 +10,7 @@ import {
   BarChart3,
   User,
   Upload,
+  Wallet,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -20,6 +21,7 @@ const ITEMS = [
   { to: '/app/cards', label: 'Cartões', icon: CreditCard },
   { to: '/app/goals', label: 'Metas', icon: Target },
   { to: '/app/subscriptions', label: 'Assinaturas', icon: Repeat },
+  { to: '/app/budgets', label: 'Orçamento', icon: Wallet },
   { to: '/app/imports', label: 'Importar extrato', icon: Upload },
   { to: '/app/copilot', label: 'Copilot', icon: Sparkles },
   { to: '/app/reports', label: 'Análises', icon: BarChart3 },
