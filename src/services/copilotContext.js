@@ -35,7 +35,7 @@ function categoryTable(transactions, now, months = 6) {
  * @param {Date} now
  */
 export function buildCopilotContext(data, now = new Date()) {
-  const { user = {}, banks = [], accounts = [], cards = [], transactions = [], goals = [], subscriptions = [] } = data;
+  const { user = {}, banks = [], accounts = [], cards = [], transactions = [], goals = [], subscriptions = [], recurringBills = [] } = data;
   const payDay = user.payDay ?? 5;
   const available = availableMoney({ accounts, cards, subscriptions, goals });
   const income = monthIncome(transactions) || user.income || 0;
@@ -109,6 +109,17 @@ export function buildCopilotContext(data, now = new Date()) {
         : '(nenhuma meta cadastrada)'
     }`
   );
+
+  if (recurringBills.length) {
+    sections.push(
+      `## Contas fixas (lançadas sozinhas todo mês)\n${recurringBills
+        .map(
+          (b) =>
+            `- ${b.name}: ${b.type === 'income' ? 'entrada' : 'saída'} de ${brl(b.amount)} todo dia ${b.dayOfMonth}${b.type === 'income' ? '' : ` (${b.category})`}${b.active === false ? ' — pausada' : ''}`
+        )
+        .join('\n')}`
+    );
+  }
 
   const recent = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 40);
   sections.push(

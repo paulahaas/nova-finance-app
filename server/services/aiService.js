@@ -61,7 +61,7 @@ async function loadUserData(uid) {
     return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   };
 
-  const [profile, banks, accounts, cards, transactions, goals, subscriptions] = await Promise.all([
+  const [profile, banks, accounts, cards, transactions, goals, subscriptions, recurringBills] = await Promise.all([
     userRef.get(),
     list('banks'),
     list('accounts'),
@@ -69,9 +69,10 @@ async function loadUserData(uid) {
     list('transactions', (ref) => ref.orderBy('date', 'desc').limit(1500)),
     list('goals'),
     list('subscriptions'),
+    list('recurringBills'),
   ]);
 
-  return { user: profile.exists ? profile.data() : {}, banks, accounts, cards, transactions, goals, subscriptions };
+  return { user: profile.exists ? profile.data() : {}, banks, accounts, cards, transactions, goals, subscriptions, recurringBills };
 }
 
 async function askClaude({ system, dataBlock, messages }) {

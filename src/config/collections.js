@@ -13,4 +13,5 @@ export const USER_COLLECTIONS = [
   'copilotMessages',
   'categoryBudgets',
   'monthlyReports',
+  'recurringBills',
 ];

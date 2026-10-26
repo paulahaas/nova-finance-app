@@ -17,6 +17,7 @@ const rows = {
   transactions: [{ id: 't1', description: 'iFood', category: 'Alimentação', amount: -45, type: 'expense', date: '2026-09-18T12:00:00.000Z' }],
   goals: [],
   subscriptions: [],
+  recurringBills: [{ id: 'r1', name: 'Aluguel', amount: 1200, type: 'expense', category: 'Moradia', dayOfMonth: 5 }],
 };
 const collection = (name) => {
   const q = { orderBy: () => q, limit: () => q, get: async () => ({ docs: rows[name].map((r) => ({ id: r.id, data: () => r })) }) };
@@ -74,6 +75,7 @@ describe('generateCopilotReply with Claude', () => {
     expect(req.system[1].cache_control).toEqual({ type: 'ephemeral' });
     expect(req.system[1].text).toContain('iFood');
     expect(req.system[1].text).toContain('Nome: Paula');
+    expect(req.system[1].text).toContain('Aluguel: saída de');
     expect(req.messages).toEqual([
       { role: 'user', content: 'oi' },
       { role: 'user', content: 'quanto gastei?' },

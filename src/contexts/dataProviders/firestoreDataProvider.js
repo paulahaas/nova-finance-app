@@ -2,7 +2,7 @@
 // (banks, accounts, cards, transactions, goals, subscriptions, ...) — see
 // firestore.rules: only the owner's UID can read or write them.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { CATEGORIES } from '../../config/categories';
@@ -16,6 +16,7 @@ import {
 } from '../../services/financeService';
 import { buildAlerts } from '../../services/alertsService';
 import { buildAchievements } from '../../services/achievementsService';
+import { firstMonthFor, pendingPostings, resumedLastPosted, transactionFromBill } from '../../services/recurringBillsService';
 
 function useUserCollection(uid, name) {
   const [items, setItems] = useState([]);
@@ -62,8 +63,35 @@ export function useFirestoreDataProvider(uid, user) {
   const [copilotMessageDocs, addCopilotMessageDoc, , removeCopilotMessageDoc] = useUserCollection(uid, 'copilotMessages');
   const [categoryBudgets, , , removeCategoryBudgetDoc] = useUserCollection(uid, 'categoryBudgets');
   const [monthlyReportDocs] = useUserCollection(uid, 'monthlyReports');
+  const [recurringBills, addRecurringBillDoc, updateRecurringBillDoc, removeRecurringBillDoc] = useUserCollection(uid, 'recurringBills');
 
   const categories = CATEGORIES;
+
+  // Posts each fixed bill as a normal transaction when its day arrives (and
+  // catches up months missed while the app wasn't opened). The transaction
+  // id is deterministic, so two devices opening at once can't duplicate it.
+  const posting = useRef(false);
+  useEffect(() => {
+    if (!uid || !db || posting.current) return;
+    const due = pendingPostings(recurringBills);
+    if (!due.length) return;
+    posting.current = true;
+    (async () => {
+      try {
+        const lastByBill = new Map();
+        for (const { bill, month, date } of due) {
+          const tx = transactionFromBill(bill, month, date);
+          await setDoc(doc(db, 'users', uid, 'transactions', tx.id), { ...tx.data, createdAt: serverTimestamp() });
+          lastByBill.set(bill.id, month);
+        }
+        await Promise.all([...lastByBill].map(([id, month]) => updateDoc(doc(db, 'users', uid, 'recurringBills', id), { lastPostedMonth: month })));
+      } catch (err) {
+        console.error('[recurring] could not post fixed bills:', err.message);
+      } finally {
+        posting.current = false;
+      }
+    })();
+  }, [uid, recurringBills]);
 
   // In-app-only (no push, decided explicitly): budget warnings, a card
   // invoice closing high, small/forgettable subscriptions, a weekly recap.
@@ -141,6 +169,30 @@ export function useFirestoreDataProvider(uid, user) {
     const toUpdate = goals.filter((g) => g.id === goalId || g.priority);
     return Promise.all(toUpdate.map((g) => updateGoalDoc(g.id, { priority: g.id === goalId })));
   }
+  function addRecurringBill({ name, amount, dayOfMonth, type, category, includeThisMonth }) {
+    return addRecurringBillDoc({
+      name,
+      amount: Math.abs(amount),
+      dayOfMonth,
+      type,
+      category: type === 'income' ? 'Entrada' : category,
+      active: true,
+      startMonth: firstMonthFor(dayOfMonth, { includeThisMonth }),
+      lastPostedMonth: null,
+    });
+  }
+  function updateRecurringBill(id, patch) {
+    return updateRecurringBillDoc(id, patch);
+  }
+  function setRecurringBillActive(id, active) {
+    const bill = recurringBills.find((b) => b.id === id);
+    if (!bill) return Promise.resolve();
+    return updateRecurringBillDoc(id, active ? { active: true, lastPostedMonth: resumedLastPosted(bill) } : { active: false });
+  }
+  // Transactions already posted stay — they're history.
+  function removeRecurringBill(id) {
+    return removeRecurringBillDoc(id);
+  }
   function addSubscription(sub) {
     return addSubscriptionDoc(sub);
   }
@@ -212,6 +264,7 @@ export function useFirestoreDataProvider(uid, user) {
     copilotMessages,
     categoryBudgets,
     monthlyReports,
+    recurringBills,
     alerts,
     achievements,
     computed,
@@ -225,6 +278,10 @@ export function useFirestoreDataProvider(uid, user) {
     updateGoal,
     setPriorityGoal,
     contributeToGoal,
+    addRecurringBill,
+    updateRecurringBill,
+    setRecurringBillActive,
+    removeRecurringBill,
     addSubscription,
     removeSubscription,
     acceptRecurringPattern,
