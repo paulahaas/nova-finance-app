@@ -14,7 +14,7 @@ export default function StatNumber({ label, value, sub, size = 'lg', tone = 'def
   return (
     <div>
       {label && <p className="text-sm text-[var(--color-text-dim)] mb-1">{label}</p>}
-      <p className={clsx('font-semibold tabular tracking-tight', sizes[size], tones[tone])}>{value}</p>
+      <p className={clsx('font-display font-extrabold tabular tracking-tight', sizes[size], tones[tone])}>{value}</p>
       {sub && <p className="text-sm text-[var(--color-text-dim)] mt-1">{sub}</p>}
     </div>
   );

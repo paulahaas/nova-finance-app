@@ -3,45 +3,34 @@ import { Home, Wallet, Target, Sparkles, Menu } from 'lucide-react';
 import clsx from 'clsx';
 
 const ITEMS = [
-  { to: '/app', label: 'Home', icon: Home, end: true },
-  { to: '/app/money', label: 'Money', icon: Wallet },
-  { to: '/app/goals', label: 'Goals', icon: Target },
-  { to: '/app/copilot', label: 'AI', icon: Sparkles },
-  { to: '/app/more', label: 'More', icon: Menu },
+  { to: '/app', label: 'Início', icon: Home, end: true },
+  { to: '/app/money', label: 'Dinheiro', icon: Wallet },
+  { to: '/app/goals', label: 'Metas', icon: Target },
+  { to: '/app/copilot', label: 'Copilot', icon: Sparkles },
+  { to: '/app/more', label: 'Mais', icon: Menu },
 ];
 
+// A floating white pill, like the side tabs of the new layout: the active
+// item fills with the accent color.
 export default function BottomNav() {
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--color-border)] bg-[var(--color-bg-elevated)]/95 backdrop-blur-lg pb-safe">
-      <div className="flex items-stretch justify-around">
-        {ITEMS.map(({ to, label, icon: Icon, end }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-              clsx(
-                'flex flex-1 flex-col items-center justify-center gap-1 py-2.5 min-h-[58px] text-[11px] font-medium transition-colors active:opacity-70',
-                isActive ? 'text-[var(--color-text)]' : 'text-[var(--color-text-faint)]'
-              )
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <span
-                  className={clsx(
-                    'flex items-center justify-center w-9 h-9 rounded-full transition-colors',
-                    isActive && 'bg-[var(--color-accent-soft)]'
-                  )}
-                >
-                  <Icon size={20} strokeWidth={2.25} color={isActive ? 'var(--color-accent)' : 'currentColor'} />
-                </span>
-                {label}
-              </>
-            )}
-          </NavLink>
-        ))}
-      </div>
+    <nav className="md:hidden fixed z-40 left-1/2 -translate-x-1/2 bottom-[calc(12px+env(safe-area-inset-bottom))] flex gap-1 rounded-full bg-white p-1.5 shadow-[0_10px_30px_rgba(60,30,20,0.18)]">
+      {ITEMS.map(({ to, label, icon: Icon, end }) => (
+        <NavLink
+          key={to}
+          to={to}
+          end={end}
+          className={({ isActive }) =>
+            clsx(
+              'flex min-w-[58px] flex-col items-center justify-center gap-0.5 rounded-full px-2.5 py-1.5 text-[10.5px] font-bold transition-colors active:opacity-70',
+              isActive ? 'bg-[var(--color-accent)] text-white' : 'text-[var(--color-text-dim)]'
+            )
+          }
+        >
+          <Icon size={18} strokeWidth={2.25} />
+          {label}
+        </NavLink>
+      ))}
     </nav>
   );
 }

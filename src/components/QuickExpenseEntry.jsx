@@ -35,7 +35,7 @@ export default function QuickExpenseEntry({ onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-[rgba(43,26,22,0.5)] backdrop-blur-sm">
       <div className="w-full md:max-w-md max-h-[88vh] overflow-y-auto rounded-t-3xl md:rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 pb-safe animate-fade-in-up">
         <div className="mx-auto mb-6 h-1 w-10 rounded-full bg-[var(--color-graphite)] md:hidden" />
         <h2 className="text-xl font-semibold mb-1">Registrar gasto</h2>

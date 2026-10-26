@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Lightbulb, CreditCard, Repeat, User, Settings as SettingsIcon, BarChart3, ChevronRight, MessageCircle, Upload, Wallet, CalendarCheck, CalendarClock, Bell } from 'lucide-react';
+import { Lightbulb, CreditCard, Repeat, User, Settings as SettingsIcon, BarChart3, ChevronRight, MessageCircle, Upload, Wallet, CalendarCheck, CalendarClock, Bell, Landmark, Trophy } from 'lucide-react';
 import Panel from '../components/Panel';
 
 const ITEMS = [
@@ -7,6 +7,8 @@ const ITEMS = [
   { to: '/app/reports', label: 'Análises', icon: BarChart3 },
   { to: '/app/reports/monthly-close', label: 'Fechamento do mês', icon: CalendarCheck },
   { to: '/app/alerts', label: 'Alertas', icon: Bell },
+  { to: '/app/banks', label: 'Bancos e contas', icon: Landmark },
+  { to: '/app/gamification', label: 'Progresso', icon: Trophy },
   { to: '/app/cards', label: 'Cartões', icon: CreditCard },
   { to: '/app/recurring', label: 'Contas fixas', icon: CalendarClock },
   { to: '/app/subscriptions', label: 'Assinaturas', icon: Repeat },
