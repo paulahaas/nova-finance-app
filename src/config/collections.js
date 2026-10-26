@@ -14,4 +14,5 @@ export const USER_COLLECTIONS = [
   'categoryBudgets',
   'monthlyReports',
   'recurringBills',
+  'pushSubscriptions',
 ];

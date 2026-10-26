@@ -1,0 +1,50 @@
+// What deserves a phone notification today: budgets near or over their limit,
+// a card invoice closing high, a fixed bill landing tomorrow, and on Mondays
+// the weekly summary. One digest per day, and each thing only once (a budget
+// that stays over limit doesn't buzz every morning). Pure, no Firebase.
+
+import { buildAlerts } from './alertsService.js';
+import { nextDueDate, monthKey } from './recurringBillsService.js';
+
+const brl = (n) => Number(n ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const isoDay = (d) => `${monthKey(d)}-${String(d.getDate()).padStart(2, '0')}`;
+
+/**
+ * @param {object} data cards, subscriptions, categoryBudgets, transactions, recurringBills
+ * @param {Record<string,string>} sentState alert id -> the day it was last notified
+ * @returns {{ payload: {title, body, url}|null, sent: Record<string,string> }} `sent` is what to remember
+ */
+export function buildDigest({ cards = [], subscriptions = [], categoryBudgets = [], transactions = [], recurringBills = [] }, sentState = {}, now = new Date()) {
+  const today = isoDay(now);
+  const month = monthKey(now);
+  const items = [];
+
+  buildAlerts({ cards, subscriptions, categoryBudgets, transactions }, now).forEach((a) => {
+    const urgent = a.level === 'over' || a.level === 'warning';
+    const weekly = a.id === 'weekly-summary' && now.getDay() === 1;
+    if (!urgent && !weekly) return;
+    items.push({ id: a.id, message: a.message, key: weekly ? today : month });
+  });
+
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  recurringBills
+    .filter((b) => b.active !== false && b.startMonth)
+    .forEach((bill) => {
+      const due = nextDueDate(bill, now);
+      if (isoDay(due) !== isoDay(tomorrow)) return;
+      items.push({
+        id: `bill-${bill.id}`,
+        message: bill.type === 'income' ? `Amanhã entra ${bill.name}: ${brl(bill.amount)}.` : `Amanhã o NOVA lança ${bill.name}: ${brl(bill.amount)}.`,
+        key: isoDay(due),
+      });
+    });
+
+  const fresh = items.filter((i) => sentState[i.id] !== i.key);
+  if (fresh.length === 0) return { payload: null, sent: {} };
+
+  const extra = fresh.length - 1;
+  return {
+    payload: { title: 'NOVA', body: fresh[0].message + (extra > 0 ? ` (+${extra} aviso${extra > 1 ? 's' : ''})` : ''), url: '/app/alerts' },
+    sent: Object.fromEntries(fresh.map((i) => [i.id, i.key])),
+  };
+}

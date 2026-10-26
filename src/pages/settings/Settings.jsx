@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import Panel from '../../components/Panel';
 import Button from '../../components/Button';
+import PushSettings from '../../components/PushSettings';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import Papa from 'papaparse';
@@ -34,6 +35,9 @@ export default function Settings() {
       cards: data.cards,
       goals: data.goals,
       subscriptions: data.subscriptions,
+      recurringBills: data.recurringBills,
+      categoryBudgets: data.categoryBudgets,
+      monthlyReports: data.monthlyReports,
     };
     download('nova-dados.json', JSON.stringify(payload, null, 2), 'application/json');
   }
@@ -82,6 +86,8 @@ export default function Settings() {
           <span className="text-[var(--color-text-faint)]">›</span>
         </button>
       </Panel>
+
+      <PushSettings />
 
       <Panel>
         <button onClick={() => navigate('/app/help')} className="w-full flex items-center justify-between text-sm">

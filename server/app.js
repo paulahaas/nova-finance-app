@@ -5,6 +5,7 @@ import copilotRouter from './routes/copilot.js';
 import openFinanceRouter from './routes/openFinance.js';
 import statementsRouter from './routes/statements.js';
 import reportsRouter from './routes/reports.js';
+import pushRouter from './routes/push.js';
 import { aiProvider } from './services/aiService.js';
 import { isFirebaseAdminConfigured } from './services/firebaseAdmin.js';
 import { isOpenFinanceConfigured } from './services/openFinanceService.js';
@@ -36,5 +37,6 @@ app.use('/api/copilot', copilotRouter);
 app.use('/api/open-finance', openFinanceRouter);
 app.use('/api/statements', statementsRouter);
 app.use('/api/reports', reportsRouter);
+app.use('/api/push', pushRouter);
 
 export default app;

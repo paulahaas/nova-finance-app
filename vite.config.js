@@ -33,6 +33,7 @@ export default defineConfig({
       workbox: {
         // The app shell is cached so it opens instantly; API calls and
         // Firebase traffic always go to the network.
+        importScripts: ['push-sw.js'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
