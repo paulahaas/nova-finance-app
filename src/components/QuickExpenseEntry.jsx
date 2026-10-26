@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import Panel from './Panel';
 import Button from './Button';
 import TransactionDraftCard from './TransactionDraftCard';
+import ReceiptButton from './ReceiptButton';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { useExpenseDraft } from '../hooks/useExpenseDraft';
@@ -27,6 +28,16 @@ export default function QuickExpenseEntry({ onClose }) {
     setNotUnderstood(false);
     const handled = await expense.interpret(message);
     if (!handled) setNotUnderstood(true);
+  }
+
+  async function handleReceipt(file) {
+    setNotUnderstood(false);
+    try {
+      const ok = await expense.interpretReceipt(file);
+      if (!ok) setNotUnderstood('Não achei o total nessa foto. Tente de novo, com a nota bem iluminada e inteira na imagem.');
+    } catch (err) {
+      setNotUnderstood(err.message);
+    }
   }
 
   async function handleConfirm() {
@@ -88,13 +99,14 @@ export default function QuickExpenseEntry({ onClose }) {
                   <Mic size={18} />
                 </button>
               )}
+              <ReceiptButton onFile={handleReceipt} disabled={expense.busy} />
               <Button type="submit" disabled={expense.busy}>
                 {expense.busy ? '...' : 'Ir'}
               </Button>
             </form>
             {notUnderstood && (
               <p className="mt-3 text-sm text-[var(--color-negative)]">
-                Não entendi como um gasto. Tenta algo como "gastei 45 no ifood" ou "uber 18,90 ontem".
+                {typeof notUnderstood === 'string' ? notUnderstood : 'Não entendi como um gasto. Tenta algo como "gastei 45 no ifood" ou "uber 18,90 ontem".'}
               </p>
             )}
             <Button variant="ghost" className="w-full mt-4" onClick={onClose}>

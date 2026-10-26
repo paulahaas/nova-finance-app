@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { parseExpense } from '../services/aiService';
+import { parseExpense, parseReceipt } from '../services/aiService';
+import { compressImageFile } from '../utils/image';
 import { looksLikeExpenseMessage } from '../services/expenseParser';
 import { formatCurrency } from '../utils/format';
 
@@ -21,6 +22,23 @@ export function useExpenseDraft({ getIdToken, data }) {
       const localOptions = { cards: data.cards, userRules: data.userCategoryRules, recentTransactions: data.transactions };
       const result = await parseExpense({ message, getIdToken, localOptions });
       if (result.intent === 'none') return false;
+      setDraft(result);
+      return true;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /**
+   * A photo of a receipt becomes a draft like any chat message.
+   * @returns {Promise<boolean>} false when nothing readable was found (the caller says so)
+   */
+  async function interpretReceipt(file) {
+    setBusy(true);
+    try {
+      const image = await compressImageFile(file, { maxDimension: 1280, quality: 0.8 });
+      const result = await parseReceipt({ image, getIdToken });
+      if (result.intent !== 'create') return false;
       setDraft(result);
       return true;
     } finally {
@@ -73,5 +91,5 @@ export function useExpenseDraft({ getIdToken, data }) {
     setDraft((d) => (d && d.bill ? { ...d, bill: { ...d.bill, ...patch } } : d));
   }
 
-  return { draft, busy, interpret, confirm, cancel, editDraftTransaction, editDraftBill };
+  return { draft, busy, interpret, interpretReceipt, confirm, cancel, editDraftTransaction, editDraftBill };
 }

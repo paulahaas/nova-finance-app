@@ -84,6 +84,23 @@ export async function estimateCountry({ country, getIdToken }) {
   return res.json();
 }
 
+/**
+ * Sends the photo of a receipt (already compressed to a data URL) to be read
+ * by the vision model. Returns the same draft shape as parseExpense(), or
+ * throws if the photo can't be read — there's no local fallback for reading
+ * an image.
+ */
+export async function parseReceipt({ image, getIdToken }) {
+  const token = await getIdToken();
+  const res = await fetch(`${API_URL}/api/copilot/parse-receipt`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ image }),
+  });
+  if (!res.ok) throw new Error('Não consegui ler essa foto. Tente de novo, com a nota bem iluminada.');
+  return res.json();
+}
+
 function pick(options) {
   return options[Math.floor(Math.random() * options.length)];
 }

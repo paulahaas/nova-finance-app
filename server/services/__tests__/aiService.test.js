@@ -34,7 +34,7 @@ vi.mock('../firebaseAdmin.js', () => ({
   },
 }));
 
-const { generateCopilotReply, sanitizeHistory, generateMonthlyNarrative, estimateCountryWithAi } = await import('../aiService.js');
+const { generateCopilotReply, sanitizeHistory, generateMonthlyNarrative, estimateCountryWithAi, extractReceiptWithAi } = await import('../aiService.js');
 
 describe('sanitizeHistory', () => {
   it('keeps only user/assistant text, starts with a user turn and caps the length', () => {
@@ -220,5 +220,44 @@ describe('estimateCountryWithAi', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ choices: [{ message: { content: 'não sei' } }] }) }));
     expect(await estimateCountryWithAi('Narnia')).toBeNull();
     vi.unstubAllGlobals();
+  });
+});
+
+describe('extractReceiptWithAi', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it('sends the photo to the vision model and parses the JSON it returns', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', '');
+    vi.stubEnv('LLM_API_KEY', 'gsk_test');
+    vi.stubEnv('LLM_VISION_MODEL', '');
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '{"intent":"create","description":"Mercado Bom Preço","amount":87.45,"type":"expense","date":"26/10/2026","category":"Alimentação"}' } }],
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const json = await extractReceiptWithAi('data:image/jpeg;base64,AAAA');
+    expect(json).toMatchObject({ intent: 'create', amount: 87.45, category: 'Alimentação' });
+
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.model).toBe('qwen/qwen3.8-27b');
+    expect(body.messages[1].content[1]).toEqual({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,AAAA' } });
+  });
+
+  it('is not available with the Claude provider (answers 501 instead of guessing)', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test');
+    await expect(extractReceiptWithAi('data:image/jpeg;base64,AAAA')).rejects.toMatchObject({ status: 501 });
+  });
+
+  it('returns null when the model replies without JSON', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', '');
+    vi.stubEnv('LLM_API_KEY', 'gsk_test');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ choices: [{ message: { content: 'não consigo ler' } }] }) }));
+    expect(await extractReceiptWithAi('data:image/png;base64,AAAA')).toBeNull();
   });
 });

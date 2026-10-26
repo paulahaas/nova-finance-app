@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { adminDb } from '../services/firebaseAdmin.js';
-import { generateCopilotReply, extractExpenseWithAi, isAiConfigured } from '../services/aiService.js';
+import { generateCopilotReply, extractExpenseWithAi, extractReceiptWithAi, isAiConfigured } from '../services/aiService.js';
 import { parseExpenseMessage, fromAiExtraction, looksLikeExpenseMessage } from '../../src/services/expenseParser.js';
 
 const router = Router();
@@ -64,6 +64,28 @@ router.post('/parse-expense', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('[copilot] parse-expense failed:', err.message);
     res.status(500).json({ error: 'Não consegui interpretar essa mensagem.' });
+  }
+});
+
+// Photo of a receipt -> a transaction draft to confirm, never saved here. The
+// photo is read for this one request and not kept anywhere.
+const IMAGE_URL_RE = /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+router.post('/parse-receipt', requireAuth, async (req, res) => {
+  const { image } = req.body ?? {};
+  if (typeof image !== 'string' || !IMAGE_URL_RE.test(image) || image.length > 3_500_000) {
+    return res.status(400).json({ error: 'image must be a jpeg, png or webp data URL under ~2.5 MB' });
+  }
+  if (!isAiConfigured()) return res.status(503).json({ error: 'AI backend not configured' });
+
+  try {
+    const cardsSnap = await adminDb.collection('users').doc(req.user.uid).collection('cards').get();
+    const options = { cards: cardsSnap.docs.map((d) => ({ id: d.id, ...d.data() })) };
+    const aiJson = await extractReceiptWithAi(image);
+    res.json(fromAiExtraction(aiJson, options));
+  } catch (err) {
+    console.error('[copilot] parse-receipt failed:', err.status ? `${err.status} ${err.message}` : err.message);
+    const status = err.status === 501 ? 501 : err.status === 429 ? 429 : 502;
+    res.status(status).json({ error: 'Não consegui ler essa foto.' });
   }
 });
 

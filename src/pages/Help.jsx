@@ -18,6 +18,7 @@ const FAQ = [
   ['O NOVA acessa a minha conta do banco?', 'Não. Ele nunca se conecta ao seu banco. Quem passa os gastos é você, pelo chat, pelo botão (+) ou importando o extrato.'],
   ['Preciso colocar o número do cartão?', 'Não. Pedimos só um nome. Se quiser, você pode informar os últimos 4 dígitos, a validade, o limite e o dia do vencimento, mas nada disso é obrigatório. Nunca guardamos o número completo, o CVV nem a senha.'],
   ['Como registro um gasto?', 'Escreva no Copilot ou no botão (+) da Home: “gastei 45 no ifood”, “uber 18,90 ontem, no nubank”. Antes de salvar, o NOVA mostra o que entendeu e você confirma.'],
+  ['Posso registrar um gasto por foto da nota?', 'Pode. Toque no ícone da câmera no Copilot ou no botão (+) da Home e escolha a foto da nota. O NOVA lê o total, o estabelecimento e a data, e você confirma antes de salvar. A foto é enviada ao serviço de IA só para essa leitura e o NOVA não a guarda.'],
   ['Como registro uma compra parcelada?', 'Diga o valor total e as parcelas: “tênis 300 em 3x”. O NOVA divide pelos meses seguintes.'],
   ['Errei um valor. Como corrijo?', 'Diga ao Copilot: “o uber foi 21” corrige o valor, e “apaga o último” remove o último lançamento.'],
   ['Como cadastro aluguel e outras contas que se repetem?', 'Em Mais, abra “Contas fixas”, ou diga ao Copilot: “aluguel 1200 todo dia 5”. Você cadastra uma vez e o NOVA lança sozinho todo mês, no dia combinado.'],

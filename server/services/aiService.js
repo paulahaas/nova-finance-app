@@ -198,6 +198,65 @@ export async function estimateCountryWithAi(country) {
   }
 }
 
+const RECEIPT_SYSTEM_PROMPT = `Você lê a foto de uma nota fiscal, cupom ou comprovante de compra no Brasil e extrai só o essencial. Responda APENAS com um JSON válido, sem texto antes ou depois, exatamente neste formato:
+{"intent":"create"|"none","description":string|null,"amount":number|null,"type":"expense","date":string|null,"category":string|null}
+
+Regras:
+- "create": a imagem é uma nota, cupom ou comprovante. "amount" é o VALOR TOTAL pago, como número positivo (ex.: 87.45). "description" é o nome do estabelecimento (ex.: "Mercado Bom Preço"). "date" no formato dd/mm/aaaa, ou null se não der para ler. "category" deve ser exatamente uma destas: Moradia, Alimentação, Transporte, Saúde, Educação, Entretenimento, Compras, Viagens, Assinaturas, Outros.
+- "none": a imagem não é uma nota ou comprovante, ou o total não está legível. Nesse caso todos os outros campos são null.
+Nunca invente um valor que não esteja na imagem.`;
+
+const RECEIPT_MODEL = () => process.env.LLM_VISION_MODEL || 'qwen/qwen3.8-27b';
+
+/**
+ * Reads a receipt photo with a vision model (OpenAI-compatible providers
+ * only — Groq's free tier). The photo is sent for this one request and never
+ * stored. Returns the raw JSON (or null); src/services/expenseParser.js's
+ * fromAiExtraction() validates it, same as for a chat message.
+ * @param {string} imageDataUrl a data:image/...;base64 URL
+ */
+export async function extractReceiptWithAi(imageDataUrl) {
+  if (aiProvider() !== 'openai-compatible') {
+    const err = new Error('vision not available for this provider');
+    err.status = 501;
+    throw err;
+  }
+  const body = {
+    model: RECEIPT_MODEL(),
+    messages: [
+      { role: 'system', content: RECEIPT_SYSTEM_PROMPT },
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Leia esta nota ou comprovante.' },
+          { type: 'image_url', image_url: { url: imageDataUrl } },
+        ],
+      },
+    ],
+    max_completion_tokens: 1500,
+    temperature: 0,
+  };
+  const res = await fetch(`${LLM_BASE_URL()}/chat/completions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.LLM_API_KEY}` },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = new Error(`LLM API ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    err.status = res.status;
+    throw err;
+  }
+  const json = await res.json();
+  const text = json.choices?.[0]?.message?.content ?? '';
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[0]);
+  } catch {
+    return null;
+  }
+}
+
 export async function generateCopilotReply({ uid, message, history }) {
   const data = await loadUserData(uid);
   const dataBlock = `Dados da usuária (atualizados agora):

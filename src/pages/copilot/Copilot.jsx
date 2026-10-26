@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import Panel from '../../components/Panel';
 import Button from '../../components/Button';
 import TransactionDraftCard from '../../components/TransactionDraftCard';
+import ReceiptButton from '../../components/ReceiptButton';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { askCopilot } from '../../services/aiService';
@@ -78,6 +79,22 @@ export default function Copilot() {
         },
       });
       await addCopilotMessage({ role: 'assistant', text: reply, basic: source === 'basic' });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function handleReceipt(file) {
+    setSending(true);
+    try {
+      await addCopilotMessage({ role: 'user', text: '📷 Enviei a foto de uma nota.' });
+      const ok = await expense.interpretReceipt(file).catch(() => false);
+      if (!ok) {
+        await addCopilotMessage({
+          role: 'assistant',
+          text: 'Não consegui ler o total nessa foto. Tente de novo, com a nota bem iluminada e inteira na imagem, ou me diga o gasto por escrito.',
+        });
+      }
     } finally {
       setSending(false);
     }
@@ -193,6 +210,7 @@ export default function Copilot() {
             <Mic size={18} />
           </button>
         )}
+        <ReceiptButton onFile={handleReceipt} disabled={sending || expense.busy} />
         <Button type="submit" disabled={sending || expense.busy}>
           Enviar
         </Button>
