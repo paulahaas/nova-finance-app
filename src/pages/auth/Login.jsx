@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../../components/Button';
+import Card3D from '../../components/card/Card3D';
 import { useAuth } from '../../contexts/AuthContext';
 import { friendlyAuthError } from '../../utils/authErrors';
 
@@ -52,9 +53,13 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col justify-center px-8 pt-safe pb-safe max-w-sm mx-auto">
-      <div className="mb-10 animate-fade-in-up">
-        <h1 className="text-5xl font-semibold tracking-tight">
+    <div className="min-h-screen bg-[linear-gradient(180deg,var(--hero-a)_0,var(--hero-b)_55%,var(--color-bg)_100%)]">
+    <div className="min-h-screen flex flex-col justify-center px-8 pt-safe pb-safe py-8 max-w-sm mx-auto">
+      <div className="mb-10 animate-fade-in-up text-center">
+        <div className="flex justify-center mb-8" style={{ '--cw': '150px' }}>
+          <Card3D type="credit" last4="4521" expiry="09/30" />
+        </div>
+        <h1 className="text-5xl font-extrabold tracking-tight">
           NOVA<span className="text-[var(--color-accent)]">.</span>
         </h1>
         <p className="mt-3 text-[var(--color-text-dim)]">Seu dinheiro. Sob seu controle.</p>
@@ -93,6 +98,7 @@ export default function Login() {
           Esqueci minha senha
         </button>
       </form>
+    </div>
     </div>
   );
 }

@@ -165,6 +165,14 @@ html[data-sc='both'] { --hero-a: #ebcbe3; --hero-b: #f9e3d6; --block: #b3709f; -
 }
 .sc-cta:hover { transform: translateX(-50%) translateY(-2px); box-shadow: 0 12px 26px rgba(80, 40, 20, 0.18); }
 
+/* ---------- the page's name as a giant word (pages without a hero) ---------- */
+.sc-pagehero { background: linear-gradient(180deg, var(--hero-a) 0%, var(--hero-b) 100%); padding: 4px 16px 16px; text-align: center; overflow: hidden; }
+.sc-pageword {
+  margin: 0; font-family: var(--font-display); font-weight: 800; letter-spacing: -0.045em; line-height: 0.9; white-space: nowrap;
+  color: var(--color-ink); font-size: min(calc((100vw - 32px) / var(--gd, 5.4)), calc(var(--gmax, 112) * 1px));
+}
+@media (min-width: 900px) { .sc-pageword { font-size: min(calc((100vw - 64px) / var(--gd, 5.4)), calc(var(--gmax, 112) * 1px)); } }
+
 /* ---------- the user's own cards ---------- */
 .sc-mine { background: var(--color-bg-elevated); padding: 64px 16px 36px; }
 .sc-wrap { max-width: 980px; margin: 0 auto; }
