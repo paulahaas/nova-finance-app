@@ -22,9 +22,15 @@ Sem as chaves do Firebase não há login nem dados. Em produção (Vercel) o `ap
 
 ## O que tem
 
-Dashboard, bancos/contas/cartões, transações, metas (com foto), assinaturas recorrentes, "posso comprar?", Copilot, insights, relatórios e previsão. Instalável no celular (PWA) e com nav própria no mobile.
+- **Home e Cartões** no layout novo: cartão 3D que gira, abas por tipo (crédito, débito, os dois). Adicionar cartão pede só um nome; limite, vencimento, fechamento e últimos 4 dígitos são opcionais.
+- **Registrar gastos** pelo chat do Copilot, pelo botão (+) da Home (com voz) ou por **foto da nota**. Sempre mostra o que entendeu e pede confirmação. Entende parcelas (`tênis 300 em 3x`), correção (`o uber foi 21`), exclusão (`apaga o último`) e contas fixas (`aluguel 1200 todo dia 5`).
+- **Contas fixas**: cadastradas uma vez, lançadas sozinhas todo mês (recupera meses sem abrir o app).
+- **Orçamento por categoria**, **faturas** por cartão (estimativa só com o que foi lançado), **alertas**, **fechamento do mês** com sugestões de corte e botão para guardar a sobra na meta.
+- **Meta Intercâmbio** em duas fases, comparação de países com câmbio ao vivo, checklist e conquistas.
+- **Lembretes no celular** (notificação, no máximo uma por dia), ativados em Ajustes.
+- Metas, bancos e transações podem ser editados e apagados pela tela. Importação de extrato (CSV/OFX) com categorização própria. Exportação em CSV/Excel e JSON. Instalável no celular (PWA).
 
-Importação de extrato (CSV/OFX) categoriza sozinha o que reconhece por regra, usa um classificador próprio (TF-IDF, sem serviço externo) pro resto, aprende com as correções, detecta duplicata e assinatura recorrente antes de confirmar qualquer coisa. Exportação em CSV/Excel e JSON em Configurações.
+O NOVA nunca acessa o banco: quem informa os gastos é o usuário.
 
 ## Segurança
 
