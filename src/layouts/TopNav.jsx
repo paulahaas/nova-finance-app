@@ -35,7 +35,7 @@ function NavItem({ to, label, end }) {
 // phone only the logo and the account button show (the bottom bar has the rest).
 export default function TopNav() {
   return (
-    <header className="sticky top-0 z-30 bg-[var(--color-peach)]/90 backdrop-blur-md pt-safe">
+    <header className="sticky top-0 z-30 bg-[var(--hero-a)]/90 backdrop-blur-md pt-safe">
       <div className="relative max-w-6xl mx-auto px-4 md:px-8 h-16 md:h-20 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center">
         <nav className="hidden md:flex justify-end gap-8 pr-10">
           {LEFT.map((item) => (

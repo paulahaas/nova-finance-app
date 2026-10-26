@@ -53,7 +53,7 @@ function useUserCollection(uid, name) {
 export function useFirestoreDataProvider(uid, user) {
   const [banks, addBankDoc] = useUserCollection(uid, 'banks');
   const [accounts, addAccountDoc] = useUserCollection(uid, 'accounts');
-  const [cards, addCardDoc] = useUserCollection(uid, 'cards');
+  const [cards, addCardDoc, updateCardDoc, removeCardDoc] = useUserCollection(uid, 'cards');
   const [transactions, addTransactionDoc, updateTransactionDoc, removeTransactionDoc] = useUserCollection(uid, 'transactions');
   const [goals, addGoalDoc, updateGoalDoc] = useUserCollection(uid, 'goals');
   const [subscriptions, addSubscriptionDoc, , removeSubscriptionDoc] = useUserCollection(uid, 'subscriptions');
@@ -118,6 +118,13 @@ export function useFirestoreDataProvider(uid, user) {
   }
   function addCard(card) {
     return addCardDoc({ used: 0, currentInvoice: 0, nextInvoice: 0, ...card });
+  }
+  function updateCard(id, patch) {
+    return updateCardDoc(id, patch);
+  }
+  // Transactions that mention the card stay — they're history.
+  function removeCard(id) {
+    return removeCardDoc(id);
   }
   // "tênis 300 em 3x": `amount` is the FULL price, split evenly across
   // `installmentsTotal` monthly transactions (standard BR card semantics —
@@ -271,6 +278,8 @@ export function useFirestoreDataProvider(uid, user) {
     addBank,
     addAccount,
     addCard,
+    updateCard,
+    removeCard,
     addTransaction,
     updateTransaction,
     removeTransaction,

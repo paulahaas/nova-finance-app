@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./showcase.css";
 
 @theme {
   --font-sans: "Mulish", "Helvetica Neue", Arial, sans-serif;
@@ -16,9 +17,6 @@
   --color-text: #2b2626;
   --color-text-dim: #6a5a54;
   --color-text-faint: #7b6a63;
-
-  --color-peach: #f6d6c3;
-  --color-cream: #fbe4c5;
 
   --color-ink: #2b2626;
   --color-accent: #b94835;
