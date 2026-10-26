@@ -13,11 +13,25 @@ const INCOME_VERBS = ['recebi', 'ganhei', 'caiu', 'entrou', 'depositaram', 'me p
 const FILLER_WORDS = new Set([
   'no', 'na', 'em', 'de', 'do', 'da', 'com', 'pelo', 'pela', 'um', 'uma', 'o', 'a',
   'gastei', 'paguei', 'comprei', 'comprando', 'recebi', 'ganhei', 'hoje', 'ontem', 'anteontem', 'reais', 'r$',
+  'cartão', 'cartao',
 ]);
 
 const AMOUNT_RE = /(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{2})?|\d+(?:[.,]\d{1,2})?)/i;
 const INSTALLMENTS_RE = /\b(?:em\s*)?(\d{1,2})\s*x\b/i;
 const DATE_RE = /\b(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\b/;
+
+// "todo mês", "todo dia 5", "mensal": the bill repeats every month. A bare
+// "todo dia" (no number) means daily, so it does not count.
+const RECURRENCE_STRIP_RE = /\btodo\s+m[eêéÊ]s(?:\s+(?:no\s+)?dia\s+\d{1,2})?|\btodo\s+dia\s+\d{1,2}|\bmensal(?:mente)?\b|\bpor\s+m[eê]s\b/gi;
+
+/** @param {string} flat accent-free, lowercase text */
+function matchRecurrence(flat) {
+  const dayMatch = flat.match(/\btodo\s+mes\s+(?:no\s+)?dia\s+(\d{1,2})\b/) || flat.match(/\btodo\s+dia\s+(\d{1,2})\b/);
+  const monthly = /\btodo\s+mes\b|\bmensal(?:mente)?\b|\bpor\s+mes\b/.test(flat);
+  if (!dayMatch && !monthly) return null;
+  const day = dayMatch ? Number(dayMatch[1]) : null;
+  return { day: day >= 1 && day <= 31 ? day : null };
+}
 
 function extractDate(text, now) {
   if (/\bhoje\b/i.test(text)) return now;
@@ -36,7 +50,7 @@ function extractCard(text, cards) {
   return cards.find((c) => c.name && normalized.includes(normalizeDescription(c.name))) ?? null;
 }
 
-function cleanDescription(text, { amountMatch, installmentsMatch, dateMatch }) {
+function cleanDescription(text, { amountMatch, installmentsMatch, dateMatch }, cardWords = null) {
   let s = text;
   [amountMatch, installmentsMatch, dateMatch].forEach((m) => {
     if (m) s = s.replace(m[0], ' ');
@@ -44,7 +58,9 @@ function cleanDescription(text, { amountMatch, installmentsMatch, dateMatch }) {
   const words = s
     .split(/\s+/)
     .filter(Boolean)
-    .filter((w) => !FILLER_WORDS.has(w.toLowerCase()));
+    .filter((w) => !FILLER_WORDS.has(w.toLowerCase()))
+    // The card's own name says where it was paid, not what it was.
+    .filter((w) => !cardWords?.has(normalizeDescription(w).toLowerCase()));
   const cleaned = words.join(' ').trim();
   return cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : text.trim();
 }
@@ -189,12 +205,34 @@ export function parseExpenseMessage(text, { cards = [], userRules = [], recentTr
   const amount = parseStatementAmount(amountMatch[1]);
   if (!amount || Number.isNaN(amount)) return { intent: 'none' };
 
+  // "aluguel 1200 todo dia 5", "internet 100 todo mês": a fixed bill the app
+  // posts by itself every month, not a one-off transaction.
+  const recurring = matchRecurrence(flat);
+  if (recurring) {
+    const isIncomeBill = INCOME_VERBS.some((v) => lower.includes(v));
+    const billText = q.replace(AMOUNT_RE, ' ').replace(RECURRENCE_STRIP_RE, ' ');
+    const name = cleanDescription(billText, {}) || (isIncomeBill ? 'Entrada' : 'Conta fixa');
+    const classified = categorize(name, { userRules, useClassifier: true });
+    return {
+      intent: 'recurring',
+      bill: {
+        name,
+        amount: Math.abs(amount),
+        type: isIncomeBill ? 'income' : 'expense',
+        category: isIncomeBill ? INCOME_CATEGORY : classified.category,
+        dayOfMonth: recurring.day ?? now.getDate(),
+        includeThisMonth: false,
+      },
+    };
+  }
+
   const installmentsMatch = q.match(INSTALLMENTS_RE);
   const dateMatch = q.match(DATE_RE);
   const date = extractDate(q, now);
   const card = extractCard(q, cards);
   const isIncome = INCOME_VERBS.some((v) => lower.includes(v));
-  const description = cleanDescription(q, { amountMatch, installmentsMatch, dateMatch }) || (isIncome ? 'Entrada' : 'Gasto');
+  const cardWords = card ? new Set(normalizeDescription(card.name).toLowerCase().split(/\s+/).filter((w) => w.length > 1)) : null;
+  const description = cleanDescription(q, { amountMatch, installmentsMatch, dateMatch }, cardWords) || (isIncome ? 'Entrada' : 'Gasto');
 
   const result = categorize(description, { userRules, useClassifier: true });
   const installmentsTotal = installmentsMatch ? Math.min(24, Math.max(1, Number(installmentsMatch[1]))) : 1;

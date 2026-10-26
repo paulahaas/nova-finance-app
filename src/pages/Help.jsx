@@ -20,7 +20,7 @@ const FAQ = [
   ['Como registro um gasto?', 'Escreva no Copilot ou no botão (+) da Home: “gastei 45 no ifood”, “uber 18,90 ontem, no nubank”. Antes de salvar, o NOVA mostra o que entendeu e você confirma.'],
   ['Como registro uma compra parcelada?', 'Diga o valor total e as parcelas: “tênis 300 em 3x”. O NOVA divide pelos meses seguintes.'],
   ['Errei um valor. Como corrijo?', 'Diga ao Copilot: “o uber foi 21” corrige o valor, e “apaga o último” remove o último lançamento.'],
-  ['Como cadastro aluguel e outras contas que se repetem?', 'Em Mais, abra “Contas fixas”. Você cadastra uma vez e o NOVA lança sozinho todo mês, no dia combinado.'],
+  ['Como cadastro aluguel e outras contas que se repetem?', 'Em Mais, abra “Contas fixas”, ou diga ao Copilot: “aluguel 1200 todo dia 5”. Você cadastra uma vez e o NOVA lança sozinho todo mês, no dia combinado.'],
   ['Como instalo o NOVA no celular?', 'Abra o site no navegador do celular e use “Adicionar à tela inicial” no menu. Ele fica com ícone próprio e abre como um app.'],
   ['Esqueci a senha.', 'Na tela de entrada, digite seu e-mail e toque em “Esqueci minha senha”. Enviamos um link para criar uma nova.'],
   ['Posso levar meus dados comigo?', 'Pode. Em Ajustes você baixa as transações em CSV (abre no Excel) ou um backup completo em JSON.'],

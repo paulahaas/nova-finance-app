@@ -30,6 +30,13 @@ describe('parseExpenseMessage — new transactions', () => {
     expect(r.transaction.date.slice(0, 10)).toBe('2026-09-19');
   });
 
+  it('leaves the card name out of the description', () => {
+    const cards = [{ id: 'c1', name: 'Cartão Nubank', bankId: 'b1' }];
+    const r = parseExpenseMessage('gastei 30 no ifood no cartão nubank', { cards, now });
+    expect(r.transaction.description).toBe('Ifood');
+    expect(r.transaction.cardId).toBe('c1');
+  });
+
   it('parses "tênis 300 em 3x" with installments', () => {
     const r = parseExpenseMessage('tênis 300 em 3x', { now });
     expect(r.intent).toBe('create');
@@ -45,6 +52,30 @@ describe('parseExpenseMessage — new transactions', () => {
 
   it('returns "none" for a plain question with no amount', () => {
     expect(parseExpenseMessage('quanto gastei com uber esse mês?', { now }).intent).toBe('none');
+  });
+});
+
+describe('parseExpenseMessage — fixed bills', () => {
+  it('reads "aluguel 1200 todo dia 5" as a recurring bill on day 5', () => {
+    const r = parseExpenseMessage('aluguel 1200 todo dia 5', { now });
+    expect(r.intent).toBe('recurring');
+    expect(r.bill).toMatchObject({ name: 'Aluguel', amount: 1200, dayOfMonth: 5, type: 'expense', includeThisMonth: false });
+  });
+
+  it('uses today\'s day when only "todo mês" is said', () => {
+    const r = parseExpenseMessage('internet 99,90 todo mês', { now });
+    expect(r.intent).toBe('recurring');
+    expect(r.bill).toMatchObject({ name: 'Internet', amount: 99.9, dayOfMonth: 20 });
+  });
+
+  it('reads a monthly income', () => {
+    const r = parseExpenseMessage('recebi 3000 de salário todo dia 7', { now });
+    expect(r.intent).toBe('recurring');
+    expect(r.bill).toMatchObject({ amount: 3000, type: 'income', category: 'Entrada', dayOfMonth: 7 });
+  });
+
+  it('does not treat a bare "todo dia" (daily) as a monthly bill', () => {
+    expect(parseExpenseMessage('gastei 10 no café todo dia', { now }).intent).toBe('create');
   });
 });
 

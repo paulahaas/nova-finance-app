@@ -56,8 +56,9 @@ export default function Invoices() {
   }
 
   const card = cards.find((c) => c.id === selectedId) ?? cards[0];
-  const view = cardInvoiceView(transactions, card.id);
   const hasCredit = card.type !== 'debit';
+  const closingDay = hasCredit ? card.closingDay || null : null;
+  const view = cardInvoiceView(transactions, card.id, new Date(), closingDay);
   const pct = card.limit > 0 ? Math.round(((card.currentInvoice || 0) / card.limit) * 100) : null;
   const due = hasCredit && card.dueDay ? dueDateIn({ dayOfMonth: card.dueDay }, monthKey(new Date())) : null;
   const dueIn = due ? daysUntil(due) : null;
@@ -83,7 +84,11 @@ export default function Invoices() {
       <Panel>
         <div className="flex items-center justify-between gap-5">
           <div className="min-w-0">
-            <p className="text-xs text-[var(--color-text-dim)] mb-1">Lançado em {card.name}, em {monthName(view.current.key)}</p>
+            <p className="text-xs text-[var(--color-text-dim)] mb-1">
+              {closingDay
+                ? `Fatura de ${monthName(view.current.key)} (fecha dia ${closingDay}), lançado em ${card.name}`
+                : `Lançado em ${card.name}, em ${monthName(view.current.key)}`}
+            </p>
             <p className="font-display font-extrabold tabular text-4xl tracking-tight">{formatCurrency(view.current.total)}</p>
             {hasCredit && due && (
               <p className="text-sm text-[var(--color-text-dim)] mt-3">
@@ -103,7 +108,9 @@ export default function Invoices() {
           </div>
         )}
         {hasCredit && pct == null && (
-          <p className="text-xs text-[var(--color-text-faint)] mt-4">Quer ver quanto da fatura já foi? Informe o limite do cartão ao tocar nele em “Cartões”. É opcional.</p>
+          <p className="text-xs text-[var(--color-text-faint)] mt-4">
+            Quer ver quanto da fatura já foi? Informe o limite{closingDay ? '' : ' e o dia do fechamento'} do cartão ao tocar nele em “Cartões”. É opcional.
+          </p>
         )}
       </Panel>
 

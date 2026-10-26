@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import RequireAuth from './components/RequireAuth';
@@ -7,37 +8,40 @@ import Splash from './pages/Splash';
 import Login from './pages/auth/Login';
 import Onboarding from './pages/onboarding/Onboarding';
 
-import Dashboard from './pages/Dashboard';
-import Banks from './pages/banks/Banks';
-import Cards from './pages/cards/Cards';
-import Transactions from './pages/transactions/Transactions';
-import Money from './pages/money/Money';
-import More from './pages/More';
-import Goals from './pages/goals/Goals';
-import GoalNew from './pages/goals/GoalNew';
-import TravelGoal from './pages/goals/TravelGoal';
-import Subscriptions from './pages/Subscriptions';
-import Budgets from './pages/budgets/Budgets';
-import Recurring from './pages/recurring/Recurring';
-import Invoices from './pages/invoices/Invoices';
-import ImportStatement from './pages/imports/ImportStatement';
-import ImportHistory from './pages/imports/ImportHistory';
-import Copilot from './pages/copilot/Copilot';
-import CanIBuy from './pages/copilot/CanIBuy';
-import Insights from './pages/reports/Insights';
-import MonthlyClose from './pages/reports/MonthlyClose';
-import Forecast from './pages/reports/Forecast';
-import Reports from './pages/reports/Reports';
-import Alerts from './pages/Alerts';
-import Gamification from './pages/Gamification';
-import Profile from './pages/Profile';
-import Settings from './pages/settings/Settings';
-import Help from './pages/Help';
+// The app's pages load on demand, so opening the NOVA on a phone downloads
+// only the screen being shown (the charts library alone is a big chunk).
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Banks = lazy(() => import('./pages/banks/Banks'));
+const Cards = lazy(() => import('./pages/cards/Cards'));
+const Transactions = lazy(() => import('./pages/transactions/Transactions'));
+const Money = lazy(() => import('./pages/money/Money'));
+const More = lazy(() => import('./pages/More'));
+const Goals = lazy(() => import('./pages/goals/Goals'));
+const GoalNew = lazy(() => import('./pages/goals/GoalNew'));
+const TravelGoal = lazy(() => import('./pages/goals/TravelGoal'));
+const Subscriptions = lazy(() => import('./pages/Subscriptions'));
+const Budgets = lazy(() => import('./pages/budgets/Budgets'));
+const Recurring = lazy(() => import('./pages/recurring/Recurring'));
+const Invoices = lazy(() => import('./pages/invoices/Invoices'));
+const ImportStatement = lazy(() => import('./pages/imports/ImportStatement'));
+const ImportHistory = lazy(() => import('./pages/imports/ImportHistory'));
+const Copilot = lazy(() => import('./pages/copilot/Copilot'));
+const CanIBuy = lazy(() => import('./pages/copilot/CanIBuy'));
+const Insights = lazy(() => import('./pages/reports/Insights'));
+const MonthlyClose = lazy(() => import('./pages/reports/MonthlyClose'));
+const Forecast = lazy(() => import('./pages/reports/Forecast'));
+const Reports = lazy(() => import('./pages/reports/Reports'));
+const Alerts = lazy(() => import('./pages/Alerts'));
+const Gamification = lazy(() => import('./pages/Gamification'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Settings = lazy(() => import('./pages/settings/Settings'));
+const Help = lazy(() => import('./pages/Help'));
 
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <Suspense fallback={null}>
         <Routes>
           <Route path="/" element={<Splash />} />
           <Route path="/login" element={<Login />} />
@@ -79,6 +83,7 @@ export default function App() {
             </Route>
           </Route>
         </Routes>
+        </Suspense>
       </AuthProvider>
     </BrowserRouter>
   );

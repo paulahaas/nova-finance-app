@@ -33,7 +33,11 @@ export function useExpenseDraft({ getIdToken, data }) {
     setBusy(true);
     try {
       let summary = '';
-      if (draft.intent === 'create') {
+      if (draft.intent === 'recurring') {
+        const { bill } = draft;
+        await data.addRecurringBill(bill);
+        summary = `Cadastrei a conta fixa "${bill.name}": ${formatCurrency(bill.amount)} todo dia ${bill.dayOfMonth}. O NOVA lança sozinho todo mês.`;
+      } else if (draft.intent === 'create') {
         const { transaction } = draft;
         await data.addTransaction(transaction);
         const n = transaction.installmentsTotal ?? 1;
@@ -64,5 +68,10 @@ export function useExpenseDraft({ getIdToken, data }) {
     setDraft((d) => (d && d.transaction ? { ...d, transaction: { ...d.transaction, ...patch } } : d));
   }
 
-  return { draft, busy, interpret, confirm, cancel, editDraftTransaction };
+  /** Same, for a fixed bill draft. */
+  function editDraftBill(patch) {
+    setDraft((d) => (d && d.bill ? { ...d, bill: { ...d.bill, ...patch } } : d));
+  }
+
+  return { draft, busy, interpret, confirm, cancel, editDraftTransaction, editDraftBill };
 }

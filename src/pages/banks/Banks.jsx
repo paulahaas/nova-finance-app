@@ -12,7 +12,10 @@ import { getGatewayStatus, getConnectToken, syncItem } from '../../services/open
 
 export default function Banks() {
   const { getIdToken } = useAuth();
-  const { banks, accounts, addBank } = useData();
+  const { banks, accounts, addBank, renameBank, removeBank } = useData();
+  const [renamingId, setRenamingId] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [confirmRemoveId, setConfirmRemoveId] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState('');
 
@@ -77,19 +80,69 @@ export default function Banks() {
       <div className="space-y-3">
         {banks.map((bank) => (
           <TiltCard key={bank.id}>
-            <Panel className="flex items-center justify-between active:scale-[0.98] transition-transform">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">🏦</span>
-                <div>
-                  <p className="font-medium">{bank.name}</p>
-                  <p className="text-sm text-[var(--color-text-dim)]">
-                    {bank.source === 'open-finance'
-                      ? 'Conectado via Open Finance'
-                      : (accountsFor(bank.id)[0]?.name ?? 'Conta principal')}
-                  </p>
-                </div>
-              </div>
-              <p className="font-medium tabular">{formatCurrency(bankBalance(bank.id))}</p>
+            <Panel className="active:scale-[0.98] transition-transform">
+              {renamingId === bank.id ? (
+                <form
+                  className="flex gap-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (renameValue.trim()) renameBank(bank.id, renameValue.trim());
+                    setRenamingId(null);
+                  }}
+                >
+                  <input
+                    autoFocus
+                    aria-label="Nome do banco"
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    className="flex-1 min-w-0 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)] px-4 py-2.5 text-sm outline-none focus:border-[var(--color-accent)]"
+                  />
+                  <Button type="submit" className="!px-4">
+                    Salvar
+                  </Button>
+                  <Button type="button" variant="ghost" className="!px-3" onClick={() => setRenamingId(null)}>
+                    Cancelar
+                  </Button>
+                </form>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">🏦</span>
+                      <div>
+                        <p className="font-medium">{bank.name}</p>
+                        <p className="text-sm text-[var(--color-text-dim)]">
+                          {bank.source === 'open-finance'
+                            ? 'Conectado via Open Finance'
+                            : (accountsFor(bank.id)[0]?.name ?? 'Conta principal')}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="font-medium tabular">{formatCurrency(bankBalance(bank.id))}</p>
+                  </div>
+                  <div className="flex justify-end gap-4 mt-3 text-xs">
+                    <button
+                      type="button"
+                      className="text-[var(--color-accent)] min-h-[32px]"
+                      onClick={() => {
+                        setRenamingId(bank.id);
+                        setRenameValue(bank.name);
+                      }}
+                    >
+                      Renomear
+                    </button>
+                    {confirmRemoveId === bank.id ? (
+                      <button type="button" className="text-[var(--color-negative)] font-semibold min-h-[32px]" onClick={() => removeBank(bank.id)}>
+                        Confirmar: remove o banco e as contas dele
+                      </button>
+                    ) : (
+                      <button type="button" className="text-[var(--color-text-faint)] min-h-[32px]" onClick={() => setConfirmRemoveId(bank.id)}>
+                        Remover
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
             </Panel>
           </TiltCard>
         ))}

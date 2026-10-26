@@ -2,6 +2,7 @@ import Panel from './Panel';
 import Button from './Button';
 import SelectMenu from './SelectMenu';
 import { CATEGORIES, INCOME_CATEGORY } from '../config/categories';
+import { firstMonthFor, monthKey } from '../services/recurringBillsService';
 import { formatCurrency, formatDate } from '../utils/format';
 
 const CATEGORY_OPTIONS = [...CATEGORIES, INCOME_CATEGORY].map((c) => ({ value: c, label: c }));
@@ -10,8 +11,60 @@ const CATEGORY_OPTIONS = [...CATEGORIES, INCOME_CATEGORY].map((c) => ({ value: c
  * The confirmation step for a chat-interpreted transaction — nothing from
  * useExpenseDraft() is ever saved without her tapping Confirmar here.
  */
-export default function TransactionDraftCard({ draft, busy, onConfirm, onCancel, onEditTransaction }) {
+export default function TransactionDraftCard({ draft, busy, onConfirm, onCancel, onEditTransaction, onEditBill }) {
   if (!draft) return null;
+
+  if (draft.intent === 'recurring') {
+    const b = draft.bill;
+    const passed = firstMonthFor(b.dayOfMonth) !== monthKey(new Date());
+    const fieldClass = 'rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)] px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)]';
+    return (
+      <Panel className="shimmer-border">
+        <p className="text-sm text-[var(--color-text-dim)] mb-3">Entendi como conta fixa, que se repete todo mês. Confirma?</p>
+        <div className="flex flex-col gap-3">
+          <input aria-label="Nome" value={b.name} onChange={(e) => onEditBill({ name: e.target.value })} className={fieldClass} />
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              aria-label="Valor"
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              value={b.amount}
+              onChange={(e) => onEditBill({ amount: Math.abs(Number(e.target.value) || 0) })}
+              className={fieldClass}
+            />
+            <input
+              aria-label="Dia do mês"
+              type="number"
+              inputMode="numeric"
+              min="1"
+              max="31"
+              value={b.dayOfMonth}
+              onChange={(e) => onEditBill({ dayOfMonth: Math.min(31, Math.max(1, Number(e.target.value) || 1)) })}
+              className={fieldClass}
+            />
+          </div>
+          <p className="text-xs text-[var(--color-text-faint)]">
+            {b.type === 'income' ? 'Entrada' : `Saída · ${b.category}`} · lançada sozinha todo dia {b.dayOfMonth}
+          </p>
+          {passed && (
+            <label className="flex items-start gap-3 text-xs text-[var(--color-text-dim)]">
+              <input type="checkbox" checked={b.includeThisMonth} onChange={(e) => onEditBill({ includeThisMonth: e.target.checked })} className="mt-0.5 w-4 h-4 accent-[var(--color-accent)]" />
+              <span>Lançar também o deste mês (o dia {b.dayOfMonth} já passou). Deixe desmarcado se você já anotou.</span>
+            </label>
+          )}
+        </div>
+        <div className="flex gap-3 mt-4">
+          <Button onClick={onConfirm} disabled={busy || !b.name.trim() || !(b.amount > 0)}>
+            {busy ? 'Salvando...' : 'Confirmar'}
+          </Button>
+          <Button variant="ghost" onClick={onCancel} disabled={busy}>
+            Cancelar
+          </Button>
+        </div>
+      </Panel>
+    );
+  }
 
   if (draft.intent === 'delete_unresolved' || draft.intent === 'correct_unresolved') {
     return (

@@ -145,6 +145,7 @@ export default function Copilot() {
             onConfirm={handleConfirmDraft}
             onCancel={handleCancelDraft}
             onEditTransaction={expense.editDraftTransaction}
+            onEditBill={expense.editDraftBill}
           />
         )}
         <div ref={bottomRef} />

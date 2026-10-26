@@ -6,6 +6,29 @@
 
 import { travelGoalTotal } from './travelGoalService.js';
 
+const XP_PER_LEVEL = 500;
+const LEVEL_TITLES = [
+  [1, 'Começando a organizar'],
+  [3, 'Organizando o dinheiro'],
+  [5, 'No controle'],
+  [8, 'Mestre das finanças'],
+];
+
+/**
+ * XP comes from things she actually does: registering transactions, closing
+ * months, setting up fixed bills and unlocking achievements. It only ever
+ * goes up with real use (nothing is handed out for opening the app).
+ */
+export function xpFromActivity({ transactions = 0, achievementsUnlocked = 0, monthlyReports = 0, recurringBills = 0 }) {
+  return transactions * 5 + achievementsUnlocked * 150 + monthlyReports * 50 + recurringBills * 20;
+}
+
+export function levelFromXp(xp) {
+  const level = Math.floor(xp / XP_PER_LEVEL) + 1;
+  const title = [...LEVEL_TITLES].reverse().find(([from]) => level >= from)[1];
+  return { level, title, xpInLevel: xp % XP_PER_LEVEL, xpForNext: XP_PER_LEVEL };
+}
+
 const MILESTONES = [25, 50, 75, 100];
 const STREAK_TARGETS = [3, 6, 12];
 

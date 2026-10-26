@@ -51,11 +51,11 @@ function useUserCollection(uid, name) {
 }
 
 export function useFirestoreDataProvider(uid, user) {
-  const [banks, addBankDoc] = useUserCollection(uid, 'banks');
-  const [accounts, addAccountDoc] = useUserCollection(uid, 'accounts');
+  const [banks, addBankDoc, updateBankDoc, removeBankDoc] = useUserCollection(uid, 'banks');
+  const [accounts, addAccountDoc, , removeAccountDoc] = useUserCollection(uid, 'accounts');
   const [cards, addCardDoc, updateCardDoc, removeCardDoc] = useUserCollection(uid, 'cards');
   const [transactions, addTransactionDoc, updateTransactionDoc, removeTransactionDoc] = useUserCollection(uid, 'transactions');
-  const [goals, addGoalDoc, updateGoalDoc] = useUserCollection(uid, 'goals');
+  const [goals, addGoalDoc, updateGoalDoc, removeGoalDoc] = useUserCollection(uid, 'goals');
   const [subscriptions, addSubscriptionDoc, , removeSubscriptionDoc] = useUserCollection(uid, 'subscriptions');
   const [userCategoryRules] = useUserCollection(uid, 'userCategoryRules');
   const [importBatches] = useUserCollection(uid, 'importBatches');
@@ -113,6 +113,13 @@ export function useFirestoreDataProvider(uid, user) {
   function addBank(bank) {
     return addBankDoc(bank);
   }
+  function renameBank(id, name) {
+    return updateBankDoc(id, { name, institution: name });
+  }
+  // Takes the bank's accounts with it; transactions stay as history.
+  function removeBank(id) {
+    return Promise.all([removeBankDoc(id), ...accounts.filter((a) => a.bankId === id).map((a) => removeAccountDoc(a.id))]);
+  }
   function addAccount(account) {
     return addAccountDoc(account);
   }
@@ -168,6 +175,19 @@ export function useFirestoreDataProvider(uid, user) {
   }
   function updateGoal(goalId, patch) {
     return updateGoalDoc(goalId, patch);
+  }
+  function removeGoal(goalId) {
+    return removeGoalDoc(goalId);
+  }
+  // "Mandar a sobra do mês para a meta": adds to the goal and marks that
+  // month's report, so the same month can't be sent twice.
+  function sendMonthlySavingsToGoal(month, goalId, amount) {
+    const goal = goals.find((g) => g.id === goalId);
+    if (!goal || !uid || !db || !(amount > 0)) return Promise.resolve();
+    return Promise.all([
+      updateGoalDoc(goalId, { saved: (goal.saved || 0) + amount }),
+      updateDoc(doc(db, 'users', uid, 'monthlyReports', month), { sentToGoal: true, sentAmount: amount }),
+    ]);
   }
   // Only one goal can be "priority" (today: Intercâmbio 2027) — unsets it
   // on every other goal so evaluatePurchase()/the Copilot/the Dashboard
@@ -276,6 +296,8 @@ export function useFirestoreDataProvider(uid, user) {
     achievements,
     computed,
     addBank,
+    renameBank,
+    removeBank,
     addAccount,
     addCard,
     updateCard,
@@ -285,6 +307,8 @@ export function useFirestoreDataProvider(uid, user) {
     removeTransaction,
     addGoal,
     updateGoal,
+    removeGoal,
+    sendMonthlySavingsToGoal,
     setPriorityGoal,
     contributeToGoal,
     addRecurringBill,

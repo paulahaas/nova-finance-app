@@ -55,6 +55,7 @@ export default function QuickExpenseEntry({ onClose }) {
             onConfirm={handleConfirm}
             onCancel={expense.cancel}
             onEditTransaction={expense.editDraftTransaction}
+            onEditBill={expense.editDraftBill}
           />
         ) : (
           <>

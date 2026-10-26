@@ -30,6 +30,22 @@ describe('cardInvoiceView', () => {
     expect(view.upcoming[0].total).toBe(100);
   });
 
+  it('moves a purchase made after the closing day to next invoice', () => {
+    // closes on the 20th: the 10th is in this invoice, the 22nd already belongs to November's
+    const transactions = [tx('c1', 100, 9, 10), tx('c1', 40, 9, 22)];
+    const onDay20 = new Date(2026, 9, 18, 12);
+    const view = cardInvoiceView(transactions, 'c1', onDay20, 20);
+    expect(view.current.key).toBe('2026-10');
+    expect(view.current.total).toBe(100);
+    expect(view.upcoming.map((m) => [m.key, m.total])).toEqual([['2026-11', 40]]);
+  });
+
+  it('opens the next invoice once today is past the closing day', () => {
+    const view = cardInvoiceView([tx('c1', 40, 9, 22)], 'c1', new Date(2026, 9, 26, 12), 20);
+    expect(view.current.key).toBe('2026-11');
+    expect(view.current.total).toBe(40);
+  });
+
   it('sorts a month newest first', () => {
     const view = cardInvoiceView([tx('c1', 1, 9, 3), tx('c1', 2, 9, 20)], 'c1', now);
     expect(view.current.items.map((t) => Math.abs(t.amount))).toEqual([2, 1]);

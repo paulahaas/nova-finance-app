@@ -12,7 +12,7 @@ function monthLabel(key) {
   return new Date(year, month - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 }
 
-function ReportView({ payload, onApplyBudgets, applying, applied, readOnly = false }) {
+function ReportView({ payload, onApplyBudgets, applying, applied, readOnly = false, onSendToGoal, sending = false }) {
   const { report, narrative } = payload;
   return (
     <div className="space-y-4">
@@ -120,6 +120,17 @@ function ReportView({ payload, onApplyBudgets, applying, applied, readOnly = fal
                 ? `isso atrasa a meta em cerca de ${Math.abs(report.goalPace.aheadDays)} dias.`
                 : 'exatamente no ritmo planejado.'}
           </p>
+          {!readOnly && onSendToGoal && report.goalPace.actualContribution > 0 && (
+            <div className="mt-4">
+              {payload.sentToGoal ? (
+                <p className="text-sm text-[var(--color-positive)]">✓ {formatCurrency(payload.sentAmount ?? report.goalPace.actualContribution)} já guardados na meta.</p>
+              ) : (
+                <Button onClick={onSendToGoal} disabled={sending} className="!px-4 !py-2 text-xs">
+                  {sending ? 'Guardando...' : `Guardar ${formatCurrency(report.goalPace.actualContribution)} nesta meta`}
+                </Button>
+              )}
+            </div>
+          )}
         </Panel>
       )}
     </div>
@@ -128,7 +139,8 @@ function ReportView({ payload, onApplyBudgets, applying, applied, readOnly = fal
 
 export default function MonthlyClose() {
   const { getIdToken } = useAuth();
-  const { monthlyReports, setCategoryBudget } = useData();
+  const { monthlyReports, setCategoryBudget, goals, sendMonthlySavingsToGoal } = useData();
+  const [sending, setSending] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
   const [applying, setApplying] = useState(false);
@@ -137,7 +149,9 @@ export default function MonthlyClose() {
 
   const currentMonth = monthKeyLabel();
   const stored = useMemo(() => monthlyReports.find((r) => r.month === currentMonth), [monthlyReports, currentMonth]);
-  const current = override ?? stored;
+  // A freshly generated report doesn't carry the "already sent to the goal"
+  // mark, which lives on the stored copy.
+  const current = override ? { ...override, sentToGoal: stored?.sentToGoal, sentAmount: stored?.sentAmount } : stored;
   const pastReports = monthlyReports.filter((r) => r.month !== currentMonth);
 
   async function generate() {
@@ -165,6 +179,18 @@ export default function MonthlyClose() {
     }
   }
 
+  async function sendToGoal() {
+    const pace = current?.report?.goalPace;
+    const goal = pace && goals.find((g) => g.name === pace.goalName);
+    if (!goal) return;
+    setSending(true);
+    try {
+      await sendMonthlySavingsToGoal(current.month, goal.id, pace.actualContribution);
+    } finally {
+      setSending(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
@@ -188,7 +214,7 @@ export default function MonthlyClose() {
         </Panel>
       )}
 
-      {current && <ReportView payload={current} onApplyBudgets={applyBudgets} applying={applying} applied={applied} />}
+      {current && <ReportView payload={current} onApplyBudgets={applyBudgets} applying={applying} applied={applied} onSendToGoal={sendToGoal} sending={sending} />}
 
       {pastReports.length > 0 && (
         <div className="space-y-3">

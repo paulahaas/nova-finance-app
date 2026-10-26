@@ -16,6 +16,7 @@ export default function CardSheet({ mode, card, initialType = 'credit', onTypeCh
   const [type, setType] = useState(card?.type ?? initialType);
   const [limit, setLimit] = useState(card?.limit ? String(card.limit) : '');
   const [dueDay, setDueDay] = useState(card?.dueDay ? String(card.dueDay) : '');
+  const [closingDay, setClosingDay] = useState(card?.closingDay ? String(card.closingDay) : '');
   const [invoice, setInvoice] = useState(card?.currentInvoice ? String(card.currentInvoice) : '');
   const [last4, setLast4] = useState(card?.last4 ?? '');
   const [expiry, setExpiry] = useState(card?.expiry ?? '');
@@ -52,6 +53,7 @@ export default function CardSheet({ mode, card, initialType = 'credit', onTypeCh
           type,
           limit: hasCredit ? Number(limit) || 0 : 0,
           dueDay: hasCredit ? Number(dueDay) || null : null,
+          closingDay: hasCredit ? Number(closingDay) || null : null,
           currentInvoice: hasCredit ? Number(invoice) || 0 : 0,
           last4: last4.replace(/\D/g, '').slice(0, 4) || null,
           expiry: expiry.trim() || null,
@@ -127,6 +129,7 @@ export default function CardSheet({ mode, card, initialType = 'credit', onTypeCh
                 <div className="opt">
                   <input type="number" inputMode="decimal" min="0" placeholder="Limite (R$)" aria-label="Limite" value={limit} onChange={(e) => setLimit(e.target.value)} />
                   <input type="number" inputMode="numeric" min="1" max="31" placeholder="Dia do vencimento" aria-label="Dia do vencimento" value={dueDay} onChange={(e) => setDueDay(e.target.value)} />
+                  <input type="number" inputMode="numeric" min="1" max="31" placeholder="Dia do fechamento" aria-label="Dia do fechamento" value={closingDay} onChange={(e) => setClosingDay(e.target.value)} />
                   <input
                     type="number"
                     inputMode="decimal"
