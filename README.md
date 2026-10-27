@@ -27,7 +27,7 @@ Sem as chaves do Firebase não há login nem dados. Em produção (Vercel) o `ap
 - **Contas fixas**: cadastradas uma vez, lançadas sozinhas todo mês (recupera meses sem abrir o app).
 - **Orçamento por categoria**, **faturas** por cartão (estimativa só com o que foi lançado), **alertas**, **fechamento do mês** com sugestões de corte e botão para guardar a sobra na meta.
 - **Meta Intercâmbio** em duas fases, comparação de países com câmbio ao vivo, checklist e conquistas.
-- **Lembretes no celular** (notificação, no máximo uma por dia), ativados em Ajustes.
+- **Lembretes no celular** (notificação à noite, 21h, no máximo uma por dia: lembra de anotar os gastos do dia e avisa de orçamento, fatura e conta fixa), ativados em Ajustes.
 - Metas, bancos e transações podem ser editados e apagados pela tela. Importação de extrato (CSV/OFX) com categorização própria. Exportação em CSV/Excel e JSON. Instalável no celular (PWA).
 
 O NOVA nunca acessa o banco: quem informa os gastos é o usuário.

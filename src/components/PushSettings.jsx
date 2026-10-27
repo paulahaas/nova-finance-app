@@ -63,7 +63,7 @@ export default function PushSettings() {
     <Panel>
       <p className="font-display font-bold mb-1">Lembretes no celular</p>
       <p className="text-sm text-[var(--color-text-dim)] mb-4">
-        Uma notificação por dia, no máximo: orçamento perto do limite, fatura alta, conta fixa que será lançada amanhã e, às segundas, o resumo da semana.
+        Uma notificação por dia, no fim da tarde (21h): um toque para anotar os gastos de hoje, se ainda não anotou, e avisos de orçamento perto do limite, fatura alta, conta fixa que será lançada amanhã e, às segundas, o resumo da semana.
       </p>
       {!supported ? (
         <p className="text-sm text-[var(--color-text-dim)]">
