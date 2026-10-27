@@ -3,21 +3,29 @@
    which a page sets to the type of the card on show (default: credit), so
    the top bar, the page and the sheets all change together. */
 
-@property --hero-a { syntax: '<color>'; inherits: true; initial-value: #dfe5e2; }
-@property --hero-b { syntax: '<color>'; inherits: true; initial-value: #ecebee; }
-@property --block  { syntax: '<color>'; inherits: true; initial-value: #566a6b; }
+@property --sc-a     { syntax: '<color>'; inherits: true; initial-value: #dfe5e2; }
+@property --sc-b     { syntax: '<color>'; inherits: true; initial-value: #ecebee; }
+@property --sc-block { syntax: '<color>'; inherits: true; initial-value: #566a6b; }
+@property --sc-tint  { syntax: '<color>'; inherits: true; initial-value: #b9c6c3; }
 
+/* --sc-* is the color of the card type on show. --spin (0 card facing front,
+   1 card seen from behind; set by Card3D while it turns) pulls the page toward
+   a deeper tint of that color, so the whole page shifts as the card spins. */
 :root {
-  --hero-a: #dfe5e2;
-  --hero-b: #ecebee;
-  --block: #566a6b;
+  --sc-a: #dfe5e2;
+  --sc-b: #ecebee;
+  --sc-block: #566a6b;
+  --sc-tint: #b9c6c3;
+  --hero-a: color-mix(in srgb, var(--sc-a), var(--sc-tint) calc(var(--spin, 0) * 90%));
+  --hero-b: color-mix(in srgb, var(--sc-b), var(--sc-tint) calc(var(--spin, 0) * 55%));
+  --block: color-mix(in srgb, var(--sc-block), #1c2829 calc(var(--spin, 0) * 45%));
   --block-ink: #f4f6f5;
   --cw: 236px;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
-  transition: --hero-a 0.6s ease, --hero-b 0.6s ease, --block 0.6s ease;
+  transition: --sc-a 0.6s ease, --sc-b 0.6s ease, --sc-block 0.6s ease, --sc-tint 0.6s ease;
 }
-html[data-sc='debit'] { --hero-a: #c9e4d6; --hero-b: #e8f1ec; --block: #478469; --block-ink: #f4f6f5; }
-html[data-sc='both'] { --hero-a: #e1e3e8; --hero-b: #f1eff2; --block: #6b7476; --block-ink: #f4f6f5; }
+html[data-sc='debit'] { --sc-a: #c9e4d6; --sc-b: #e8f1ec; --sc-block: #478469; --sc-tint: #8fcfb2; }
+html[data-sc='both'] { --sc-a: #e1e3e8; --sc-b: #f1eff2; --sc-block: #6b7476; --sc-tint: #cfd3dc; }
 @media (max-width: 899px) { :root { --cw: 158px; } }
 
 /* ---------- card colors (per card, not per page) ---------- */

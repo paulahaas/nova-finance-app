@@ -13,7 +13,7 @@ export default function Card3D({ type, kick = 0, ...face }) {
   const stageRef = useRef(null);
   const cardRef = useRef(null);
   const shadowRef = useRef(null);
-  const motion = useRef({ ry: -24, rx: -6, vel: 0, dragging: false, lastX: 0, lastY: 0, inView: true });
+  const motion = useRef({ ry: -24, rx: -6, vel: 0, dragging: false, lastX: 0, lastY: 0, inView: true, spin: -1 });
   const [hintGone, setHintGone] = useState(false);
   const [dragging, setDragging] = useState(false);
   const reduced = useMemo(() => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
@@ -41,6 +41,12 @@ export default function Card3D({ type, kick = 0, ...face }) {
         style.setProperty('--ry', `${m.ry.toFixed(2)}deg`);
         style.setProperty('--rx', `${m.rx.toFixed(2)}deg`);
         style.setProperty('--shine', `${((turn / 360) * 170 - 35).toFixed(1)}%`);
+        // 0 = front, 1 = back; in 1/48 steps so the page isn't repainted every frame.
+        const spin = Math.round(((1 - Math.cos((m.ry * Math.PI) / 180)) / 2) * 48) / 48;
+        if (spin !== m.spin) {
+          m.spin = spin;
+          document.documentElement.style.setProperty('--spin', String(spin));
+        }
         if (shadowRef.current) shadowRef.current.style.transform = `scaleX(${(0.45 + 0.55 * Math.abs(Math.cos((m.ry * Math.PI) / 180))).toFixed(3)})`;
       }
       raf = requestAnimationFrame(frame);
@@ -49,6 +55,7 @@ export default function Card3D({ type, kick = 0, ...face }) {
     return () => {
       cancelAnimationFrame(raf);
       observer?.disconnect();
+      document.documentElement.style.removeProperty('--spin');
     };
   }, [reduced]);
 
