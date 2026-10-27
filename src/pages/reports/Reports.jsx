@@ -8,7 +8,7 @@ import { formatCurrency, formatCompact } from '../../utils/format';
 import { financialScore, totalSubscriptions } from '../../services/financeService';
 import { categoryAnomalies } from '../../services/insightsService';
 
-const COLORS = ['#b94835', '#d9902b', '#2f8a5f', '#7b6a63', '#e9a090', '#5b4fd0'];
+const COLORS = ['#3f7a65', '#d9902b', '#445455', '#87c0aa', '#9aa5a6', '#5b4fd0'];
 
 export default function Reports() {
   const { transactions, goals, subscriptions, computed } = useData();

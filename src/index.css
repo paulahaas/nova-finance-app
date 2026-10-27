@@ -5,26 +5,26 @@
   --font-sans: "Mulish", "Helvetica Neue", Arial, sans-serif;
   --font-display: "Montserrat", "Helvetica Neue", Arial, sans-serif;
 
-  /* NOVA palette: warm pastel, light. Ink for text and the main buttons,
-     one coral accent; each card type brings its own color on top. */
-  --color-bg: #fdf1e4;
-  --color-bg-elevated: #fff7ee;
+  /* NOVA palette: cool mist, light. Ink for text and the main buttons,
+     one forest-mint accent; each card type brings its own color on top. */
+  --color-bg: #f2eff2;
+  --color-bg-elevated: #f9f7f9;
   --color-surface: #ffffff;
-  --color-surface-2: #f8eee4;
-  --color-border: #ead9ca;
-  --color-graphite: #e6d3c3;
+  --color-surface-2: #eceaed;
+  --color-border: #dcdadf;
+  --color-graphite: #dcdde0;
 
-  --color-text: #2b2626;
-  --color-text-dim: #6a5a54;
-  --color-text-faint: #7b6a63;
+  --color-text: #2b3434;
+  --color-text-dim: #556161;
+  --color-text-faint: #667272;
 
-  --color-ink: #2b2626;
-  --color-accent: #b94835;
-  --color-accent-bright: #9f3a29;
-  --color-accent-dim: #e9a090;
-  --color-accent-soft: rgba(185, 72, 53, 0.12);
+  --color-ink: #2b3434;
+  --color-accent: #3f7a65;
+  --color-accent-bright: #2f5a4a;
+  --color-accent-dim: #87c0aa;
+  --color-accent-soft: rgba(63, 122, 101, 0.13);
 
-  --color-positive: #2f8a5f;
+  --color-positive: #2a7d56;
   --color-negative: #c23a4b;
   --color-warning: #a8680b;
 }
