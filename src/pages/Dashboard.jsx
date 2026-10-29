@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CalendarCheck, ChevronRight, Plus, ShoppingBag, Sparkles } from 'lucide-react';
 import Card3D from '../components/card/Card3D';
 import FlatCard from '../components/card/FlatCard';
 import Panel from '../components/Panel';
 import ProgressBar from '../components/ProgressBar';
 import QuickExpenseEntry from '../components/QuickExpenseEntry';
-import { giantSizeFor } from '../config/cardTypes';
+import { CARD_COPY, CARD_TYPES, giantSizeFor } from '../config/cardTypes';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { useExchangeRate } from '../hooks/useExchangeRate';
@@ -33,10 +33,12 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { computed, goals, alerts, transactions, cards } = useData();
   const [showQuickEntry, setShowQuickEntry] = useState(false);
+  const navigate = useNavigate();
   const [cardIndex, setCardIndex] = useState(0);
+  const [demoType, setDemoType] = useState('credit');
 
   const shown = cards.length ? cards[cardIndex % cards.length] : null;
-  const type = shown?.type ?? 'credit';
+  const type = shown?.type ?? demoType;
   useShowcaseTheme(type);
 
   const now = new Date();
@@ -58,6 +60,22 @@ export default function Dashboard() {
   return (
     <div>
       <section className="sc-hero">
+        <div className="sc-rail" role="tablist" aria-label={cards.length ? 'Seus cartões' : 'Tipos de cartão'}>
+          {cards.length
+            ? cards.map((c, i) => (
+                <button key={c.id} type="button" role="tab" aria-selected={i === cardIndex % cards.length} title={c.name} onClick={() => setCardIndex(i)}>
+                  {c.name.length > 16 ? `${c.name.slice(0, 15)}…` : c.name}
+                </button>
+              ))
+            : CARD_TYPES.map((t) => (
+                <button key={t} type="button" role="tab" aria-selected={demoType === t} onClick={() => setDemoType(t)}>
+                  {CARD_COPY[t].label}
+                </button>
+              ))}
+          <button type="button" className="rg" aria-label="Adicionar ou ver cartões" title="Cartões" onClick={() => navigate('/app/cards')}>
+            <Plus size={15} />
+          </button>
+        </div>
         <p className="text-sm text-[var(--color-text-dim)] pt-1 pb-1">
           {greeting()}, {user?.name?.split(' ')[0]}
         </p>
@@ -88,11 +106,6 @@ export default function Dashboard() {
             NOVA Pulse — {pulse.label}
           </p>
           <p className="cap mt-1">{pulse.message}</p>
-          {cards.length > 1 && (
-            <button type="button" className="mt-3 text-xs font-bold underline text-[var(--color-text-dim)]" onClick={() => setCardIndex((i) => i + 1)}>
-              Ver outro cartão ({(cardIndex % cards.length) + 1}/{cards.length})
-            </button>
-          )}
           {cards.length === 0 && (
             <Link to="/app/cards" className="mt-3 inline-block text-xs font-bold underline text-[var(--color-text-dim)]">
               Adicionar meu primeiro cartão
