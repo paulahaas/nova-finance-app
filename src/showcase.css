@@ -343,3 +343,26 @@ html[data-sc='both'] { --sc-a: #e1e3e8; --sc-b: #f1eff2; --sc-block: #6b7476; --
   .sc-short .tx { flex: none; }
   .sc-short .go { margin-top: auto; align-self: flex-end; }
 }
+
+/* ---------- Home month summary: income against spending, plus what's left ---------- */
+.sc-sum-section { background: var(--color-bg); padding: 40px 16px 0; }
+.sc-sum { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 760px) { .sc-sum { grid-template-columns: 1fr 1fr; gap: 16px; } }
+.sc-sum-card, .sc-sum-left { border-radius: 18px; padding: 20px; }
+.sc-sum-card { background: #fff; box-shadow: 0 1px 0 rgba(43, 52, 52, 0.05), 0 8px 24px rgba(43, 52, 52, 0.06); }
+.sc-sum .k { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #667272; }
+.sc-sum .v { font-family: var(--font-display); font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; margin: 2px 0 0; }
+.sc-sum .bar { height: 8px; border-radius: 4px; margin: 8px 0 18px; overflow: hidden; }
+.sc-sum .bar:last-child { margin-bottom: 0; }
+.sc-sum .bar i { display: block; height: 100%; border-radius: 4px; transition: width 0.7s var(--ease); }
+.sc-sum .bar.in { background: #cfe8dc; }
+.sc-sum .bar.in i { background: #87c0aa; }
+.sc-sum .bar.out { background: #e6e4e8; }
+.sc-sum .bar.out i { background: #445455; }
+.sc-sum-left { background: #cfe8dc; color: #17302a; display: flex; flex-direction: column; justify-content: space-between; gap: 18px; }
+.sc-sum-left.short { background: #f1dcdc; color: #5a1d24; }
+.sc-sum-left .k { color: inherit; opacity: 0.8; }
+.sc-sum-left .big { font-family: var(--font-display); font-size: 32px; font-weight: 800; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.sc-sum-left .tip p { font-size: 13.5px; line-height: 1.6; font-weight: 600; }
+.sc-sum-left .tip p + p { margin-top: 10px; }
+.sc-sum-left .tip a { color: inherit; font-weight: 800; text-decoration: underline; }

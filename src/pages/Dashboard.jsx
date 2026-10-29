@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CalendarCheck, ChevronRight, Plus, ShoppingBag, Sparkles } from 'lucide-react';
 import Card3D from '../components/card/Card3D';
-import FlatCard from '../components/card/FlatCard';
 import Panel from '../components/Panel';
 import ProgressBar from '../components/ProgressBar';
 import QuickExpenseEntry from '../components/QuickExpenseEntry';
@@ -47,6 +46,7 @@ export default function Dashboard() {
   const salary = nextSalaryDate(user?.payDay ?? 5);
   const pulse = pulseStatus({ available: computed.available, monthlyIncome: computed.monthIncome });
   const savings = computed.monthIncome - computed.monthExpenses;
+  const barMax = Math.max(computed.monthIncome, computed.monthExpenses);
 
   const mainGoal = primaryGoal(goals);
   const isTravelGoal = mainGoal && Array.isArray(mainGoal.countries);
@@ -117,41 +117,38 @@ export default function Dashboard() {
         </button>
       </section>
 
-      <section className="sc-block">
-        <div className="sc-block-grid">
-          <div className="sc-art">
-            <h2 className="sc-take">
-              RESUMO
-              <br />
-              DO MÊS
-            </h2>
-            <FlatCard type={type} nickname={shown?.name ?? ''} last4={shown?.last4 ?? ''} expiry={shown?.expiry ?? ''} holder={holder} />
-            <span className="sc-chip c1">
-              <small>Entradas</small>
-              <b>{formatCurrency(computed.monthIncome)}</b>
-            </span>
-            <span className="sc-chip c2">
-              <small>Gastos</small>
-              <b>{formatCurrency(computed.monthExpenses)}</b>
-            </span>
-            <span className="sc-chip c3">
-              <small>Economia</small>
-              <b className={savings >= 0 ? 'text-[var(--color-positive)]' : 'text-[var(--color-negative)]'}>{formatCurrency(savings)}</b>
-            </span>
-          </div>
-          <div className="sc-copy">
-            <p>{primaryRecommendation(transactions)}</p>
-            {alerts[0] && (
-              <p>
-                {alerts[0].icon} {alerts[0].message} <Link to="/app/alerts">Ver alertas{alerts.length > 1 ? ` (${alerts.length})` : ''}</Link>
-              </p>
-            )}
+      <section className="sc-sum-section">
+        <div className="sc-wrap">
+          <h2 className="sc-title">Resumo do mês</h2>
+          <div className="sc-sum">
+            <div className="sc-sum-card">
+              <p className="k">Entradas</p>
+              <p className="v">{formatCurrency(computed.monthIncome)}</p>
+              <div className="bar in">
+                <i style={{ width: `${barMax ? (computed.monthIncome / barMax) * 100 : 0}%` }} />
+              </div>
+              <p className="k">Gastos</p>
+              <p className="v">{formatCurrency(computed.monthExpenses)}</p>
+              <div className="bar out">
+                <i style={{ width: `${barMax ? (computed.monthExpenses / barMax) * 100 : 0}%` }} />
+              </div>
+            </div>
+            <div className={savings >= 0 ? 'sc-sum-left' : 'sc-sum-left short'}>
+              <div>
+                <p className="k">{savings >= 0 ? 'Sobrou' : 'Faltou'}</p>
+                <p className="big">{formatCurrency(Math.abs(savings))}</p>
+              </div>
+              <div className="tip">
+                <p>{primaryRecommendation(transactions)}</p>
+                {alerts[0] && (
+                  <p>
+                    {alerts[0].icon} {alerts[0].message} <Link to="/app/alerts">Ver alertas{alerts.length > 1 ? ` (${alerts.length})` : ''}</Link>
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
-        <button type="button" className="sc-tag" onClick={() => setShowQuickEntry(true)}>
-          <span>Registrar gasto</span>
-          <b>+</b>
-        </button>
       </section>
 
       {mainGoal && (
