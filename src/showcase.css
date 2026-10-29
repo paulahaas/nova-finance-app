@@ -319,3 +319,27 @@ html[data-sc='both'] { --sc-a: #e1e3e8; --sc-b: #f1eff2; --sc-block: #6b7476; --
 @media (prefers-reduced-motion: reduce) {
   .sc-art .nc-flat, .sc-swap, .sc-sheet { animation: none !important; }
 }
+
+/* ---------- Home shortcuts: white cards, color only in the icon ---------- */
+.sc-shortcuts { background: var(--color-bg); padding: 28px 16px 40px; }
+.sc-short-grid { max-width: 980px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 760px) { .sc-short-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
+.sc-short {
+  display: flex; align-items: center; gap: 14px; background: #fff; color: var(--color-ink); text-decoration: none;
+  border-radius: 18px; padding: 16px; box-shadow: 0 1px 0 rgba(43, 52, 52, 0.05), 0 8px 24px rgba(43, 52, 52, 0.06);
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+.sc-short:hover { transform: translateY(-2px); box-shadow: 0 1px 0 rgba(43, 52, 52, 0.05), 0 14px 30px rgba(43, 52, 52, 0.1); }
+.sc-short .icon { flex: none; width: 44px; height: 44px; border-radius: 999px; display: flex; align-items: center; justify-content: center; }
+.sc-short[data-tone='a'] .icon { background: #dcdde0; color: #445455; }
+.sc-short[data-tone='b'] .icon { background: #cfe8dc; color: #2f5a4a; }
+.sc-short[data-tone='c'] .icon { background: #e3e4e8; color: #556161; }
+.sc-short .tx { flex: 1; min-width: 0; }
+.sc-short h3 { font-size: 16px; font-weight: 800; line-height: 1.2; }
+.sc-short .sub { font-size: 13px; color: var(--color-text-dim); margin-top: 2px; }
+.sc-short .go { flex: none; color: var(--color-text-faint); }
+@media (min-width: 760px) {
+  .sc-short { flex-direction: column; align-items: flex-start; gap: 12px; padding: 20px; min-height: 150px; }
+  .sc-short .tx { flex: none; }
+  .sc-short .go { margin-top: auto; align-self: flex-end; }
+}

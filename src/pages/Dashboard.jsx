@@ -196,37 +196,37 @@ export default function Dashboard() {
         </section>
       )}
 
-      <section className="sc-present">
-        <div className="sc-tiles">
-          <Link to="/app/copilot" className="sc-tile" data-tone="a">
+      <section className="sc-shortcuts">
+        <div className="sc-short-grid">
+          <Link to="/app/copilot" className="sc-short" data-tone="a">
             <span className="icon">
-              <Sparkles size={48} strokeWidth={1.6} />
+              <Sparkles size={22} strokeWidth={1.8} />
             </span>
             <div className="tx">
               <h3>Copilot</h3>
               <p className="sub">pergunte ou registre um gasto</p>
             </div>
-            <ChevronRight size={26} />
+            <ChevronRight size={20} className="go" />
           </Link>
-          <Link to="/app/can-i-buy" className="sc-tile" data-tone="b">
+          <Link to="/app/can-i-buy" className="sc-short" data-tone="b">
             <span className="icon">
-              <ShoppingBag size={48} strokeWidth={1.6} />
+              <ShoppingBag size={22} strokeWidth={1.8} />
             </span>
             <div className="tx">
               <h3>Posso comprar?</h3>
               <p className="sub">veja se a compra cabe</p>
             </div>
-            <ChevronRight size={26} />
+            <ChevronRight size={20} className="go" />
           </Link>
-          <Link to="/app/reports/monthly-close" className="sc-tile" data-tone="c">
+          <Link to="/app/reports/monthly-close" className="sc-short" data-tone="c">
             <span className="icon">
-              <CalendarCheck size={48} strokeWidth={1.6} />
+              <CalendarCheck size={22} strokeWidth={1.8} />
             </span>
             <div className="tx">
               <h3>Fechamento do mês</h3>
               <p className="sub">totais e sugestões de corte</p>
             </div>
-            <ChevronRight size={26} />
+            <ChevronRight size={20} className="go" />
           </Link>
         </div>
       </section>
