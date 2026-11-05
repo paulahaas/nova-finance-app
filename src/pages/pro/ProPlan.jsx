@@ -45,8 +45,14 @@ export default function ProPlan() {
       // Demo mode: no real Stripe gateway is configured, so this simply
       // flips the local plan flag. See server/services/paymentService.js
       // for the real Checkout/webhook flow once Stripe is connected.
-      await upgradeToPro();
-      navigate('/app/profile');
+      try {
+        await upgradeToPro();
+        navigate('/app/profile');
+      } catch {
+        // With Firebase on, firestore.rules only let the Stripe webhook set
+        // plan: "pro", so the demo shortcut is rejected there by design.
+        setError('Pagamentos ainda não estão disponíveis. Tente novamente mais tarde.');
+      }
       return;
     }
 

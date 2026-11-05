@@ -14,11 +14,15 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
 
 const GREETINGS = ['oi', 'ola', 'olá', 'bom dia', 'boa tarde', 'boa noite', 'eae', 'e ai', 'e aí'];
 
-export async function askCopilot({ message, context }) {
+export async function askCopilot({ message, context, getIdToken }) {
   try {
+    const token = getIdToken ? await getIdToken() : null;
+    // The backend requires a Firebase ID token. Without one (local/demo
+    // mode) there's no point calling it — go straight to the fallback.
+    if (!token) throw new Error('not signed in with Firebase');
     const res = await fetch(`${API_URL}/api/copilot`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ message, context }),
     });
     if (!res.ok) throw new Error('backend unavailable');
