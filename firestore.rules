@@ -6,20 +6,49 @@ rules_version = '2';
 // not just in the client code.
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // Billing state is owned by the Stripe webhook (server/services/
+    // paymentService.js), which writes through the Admin SDK and bypasses
+    // these rules. A client must never be able to grant itself Pro or
+    // point its profile at someone else's Stripe customer.
+    function billingFields() {
+      return ['plan', 'subscriptionStatus', 'subscriptionId',
+              'subscriptionStart', 'subscriptionEnd', 'stripeCustomerId'];
+    }
+
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
     match /users/{uid} {
-      allow read, update: if request.auth != null && request.auth.uid == uid;
+      allow read: if isOwner(uid);
+
+      // Any profile field may change except billing state. The one billing
+      // change a client may make is a downgrade to "free" (the demo-mode
+      // "cancel" in Profile.jsx), which can't grant anything.
+      allow update: if isOwner(uid) && (
+        !changedKeys().hasAny(billingFields())
+        || (request.resource.data.plan == 'free'
+            && changedKeys().hasOnly(['plan', 'subscriptionStatus']))
+      );
+
       // Profile creation happens client-side right after signup (see
       // contexts/authProviders/firebaseAuthProvider.js) — allow create for
-      // the signed-in user's own doc, but never allow a client to set
-      // itself to plan: "pro" directly (that only happens via the Stripe
-      // webhook, which uses the Admin SDK and bypasses these rules).
-      allow create: if request.auth != null
-        && request.auth.uid == uid
-        && request.resource.data.plan == 'free';
+      // the signed-in user's own doc, always on the free plan and without
+      // any Stripe/subscription fields.
+      allow create: if isOwner(uid)
+        && request.resource.data.plan == 'free'
+        && !request.resource.data.keys().hasAny(
+             ['subscriptionStatus', 'subscriptionId', 'subscriptionStart',
+              'subscriptionEnd', 'stripeCustomerId']);
       allow delete: if false;
 
       match /{collection}/{docId} {
-        allow read, write: if request.auth != null && request.auth.uid == uid;
+        allow read, write: if isOwner(uid);
       }
     }
   }

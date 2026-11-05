@@ -1,9 +1,12 @@
 import { Router } from 'express';
 import { generateCopilotReply } from '../services/aiService.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
-router.post('/', async (req, res) => {
+// requireAuth keeps the Anthropic key from being an open, unauthenticated
+// proxy: without it anyone who finds the URL can spend the key's quota.
+router.post('/', requireAuth, async (req, res) => {
   const { message, context } = req.body ?? {};
 
   if (!message || typeof message !== 'string') {

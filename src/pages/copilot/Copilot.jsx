@@ -20,7 +20,7 @@ const SUGGESTIONS = [
 ];
 
 export default function Copilot() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, getIdToken } = useAuth();
   const { computed, goals, transactions, cards, subscriptions, recurringPatterns = [] } = useData();
   const [messages, setMessages] = useState([
     { role: 'assistant', text: 'Olá! Sou o Copilot da NOVA, seu assistente financeiro pessoal. Pergunte qualquer coisa sobre seu dinheiro.' },
@@ -45,6 +45,7 @@ export default function Copilot() {
     setSending(true);
     const { reply } = await askCopilot({
       message: text,
+      getIdToken,
       context: {
         available: computed.available,
         monthlyIncome: computed.monthIncome,
