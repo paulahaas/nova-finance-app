@@ -20,7 +20,7 @@ const SUGGESTIONS = [
 ];
 
 export default function Copilot() {
-  const { user, updateUser, getIdToken } = useAuth();
+  const { user, updateUser, getIdToken, authMode } = useAuth();
   const { computed, goals, transactions, cards, subscriptions, recurringPatterns = [] } = useData();
   const [messages, setMessages] = useState([
     { role: 'assistant', text: 'Olá! Sou o Copilot da NOVA, seu assistente financeiro pessoal. Pergunte qualquer coisa sobre seu dinheiro.' },
@@ -30,7 +30,10 @@ export default function Copilot() {
   const [sending, setSending] = useState(false);
 
   const plan = getPlan(user?.plan);
-  const used = user?.aiMessagesUsed ?? 0;
+  // In Firebase mode the server counts messages per month (aiMessagesMonth);
+  // a count from a previous month means nothing has been used yet this month.
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const used = user?.aiMessagesMonth && user.aiMessagesMonth !== thisMonth ? 0 : user?.aiMessagesUsed ?? 0;
   const permission = canUseCopilot(user, used);
   const limitIsUnlimited = plan.limits.aiMessagesPerMonth === UNLIMITED;
 
@@ -43,7 +46,7 @@ export default function Copilot() {
     setMessages((m) => [...m, { role: 'user', text }]);
     setInput('');
     setSending(true);
-    const { reply } = await askCopilot({
+    const { reply, source } = await askCopilot({
       message: text,
       getIdToken,
       context: {
@@ -59,7 +62,11 @@ export default function Copilot() {
       },
     });
     setMessages((m) => [...m, { role: 'assistant', text: reply }]);
-    updateUser({ aiMessagesUsed: used + 1 });
+    // Backend replies are counted server-side (and firestore.rules block the
+    // client from writing the counter). Only demo mode counts locally.
+    if (source !== 'backend' && authMode === 'demo') {
+      updateUser({ aiMessagesUsed: used + 1 });
+    }
     setSending(false);
   }
 
